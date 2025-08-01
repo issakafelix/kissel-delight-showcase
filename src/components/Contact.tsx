@@ -55,6 +55,38 @@ const Contact = () => {
           </Card>
         </div>
         
+        {/* Map Section */}
+        <div className="mt-16">
+          <div className="text-center mb-8">
+            <h3 className="text-3xl font-bold text-earth-brown mb-4">Find Us Here</h3>
+            <p className="text-muted-foreground">Located in the heart of the city's culinary district</p>
+          </div>
+          
+          <div className="max-w-4xl mx-auto">
+            <div className="map-container rounded-xl overflow-hidden shadow-elegant border border-golden/20">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3022.681138573899!2d-73.98731492404064!3d40.74844097138593!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c259a9b3117469%3A0xd134e199a405a163!2sEmpire%20State%20Building!5e0!3m2!1sen!2sus!4v1709123456789!5m2!1sen!2sus"
+                width="100%"
+                height="400"
+                style={{ border: 0 }}
+                allowFullScreen={true}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Kissel Food Restaurant Location"
+              />
+            </div>
+            
+            <div className="mt-6 text-center">
+              <p className="text-muted-foreground mb-4">
+                Easily accessible by public transport • Free parking available • Wheelchair accessible
+              </p>
+              <Button variant="hero" size="lg">
+                Get Directions
+              </Button>
+            </div>
+          </div>
+        </div>
+
         <div className="text-center mt-16">
           <h3 className="text-2xl font-bold text-earth-brown mb-4">Follow Us</h3>
           <p className="text-muted-foreground mb-6">Stay updated with our latest dishes and special offers</p>
