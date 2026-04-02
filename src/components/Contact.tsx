@@ -19,9 +19,9 @@ const Contact = () => {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground leading-relaxed">
-                Osu, Oxford Street<br />
-                Accra, Greater Accra<br />
-                Ghana
+                Kasoa-Fetteh Kakraba<br />
+                Adjacent KAFF University<br />
+                Kasoa, Central Region, Ghana
               </p>
             </CardContent>
           </Card>
