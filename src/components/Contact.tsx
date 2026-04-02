@@ -19,9 +19,9 @@ const Contact = () => {
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground leading-relaxed">
-                123 Flavor Street<br />
-                Foodie District<br />
-                Cuisine City, FC 12345
+                Osu, Oxford Street<br />
+                Accra, Greater Accra<br />
+                Ghana
               </p>
             </CardContent>
           </Card>
