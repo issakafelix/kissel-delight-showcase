@@ -45,7 +45,7 @@ const Contact = () => {
             </CardHeader>
             <CardContent>
               <div className="text-muted-foreground space-y-2">
-                <p><strong>Phone:</strong><br />+233 30 277 1234</p>
+                <p><strong>Phone:</strong><br />+233 537 947 455</p>
                 <p><strong>Email:</strong><br />info@kisselfood.com</p>
                 <Button variant="hero" className="mt-4">
                   Make Reservation
