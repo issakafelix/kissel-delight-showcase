@@ -9,8 +9,8 @@ const menuItems = [
   {
     id: 1,
     name: "Jollof Rice",
-    description: "Authentic Nigerian Jollof rice cooked with aromatic spices, vegetables, and your choice of protein. A traditional favorite that brings the taste of Nigeria to your table.",
-    price: "$15.99",
+    description: "Authentic Ghanaian Jollof rice cooked with aromatic spices, fresh tomatoes, and your choice of protein. A traditional favourite that brings the rich taste of Ghana to your table.",
+    price: "GH₵ 85.00",
     image: jollofImage,
     category: "Main Course"
   },
