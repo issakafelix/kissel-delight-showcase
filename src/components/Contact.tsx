@@ -78,7 +78,7 @@ const Contact = () => {
             
             <div className="mt-6 text-center">
               <p className="text-muted-foreground mb-4">
-                Easily accessible by trotro & taxi • Parking available • Located on Oxford Street, Osu
+                Easily accessible by trotro & taxi • Parking available • Adjacent KAFF University, Kasoa
               </p>
               <Button variant="hero" size="lg">
                 Get Directions
