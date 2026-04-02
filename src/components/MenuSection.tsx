@@ -18,7 +18,7 @@ const menuItems = [
     id: 2,
     name: "Artisan Pizza",
     description: "Hand-crafted pizza with fresh ingredients, premium cheese, and our signature sauce. Choose from various toppings to create your perfect slice.",
-    price: "$18.99",
+    price: "GH₵ 120.00",
     image: pizzaImage,
     category: "Main Course"
   },
