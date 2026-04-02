@@ -9,8 +9,8 @@ const menuItems = [
   {
     id: 1,
     name: "Jollof Rice",
-    description: "Authentic Nigerian Jollof rice cooked with aromatic spices, vegetables, and your choice of protein. A traditional favorite that brings the taste of Nigeria to your table.",
-    price: "$15.99",
+    description: "Authentic Ghanaian Jollof rice cooked with aromatic spices, fresh tomatoes, and your choice of protein. A traditional favourite that brings the rich taste of Ghana to your table.",
+    price: "GH₵ 85.00",
     image: jollofImage,
     category: "Main Course"
   },
@@ -18,7 +18,7 @@ const menuItems = [
     id: 2,
     name: "Artisan Pizza",
     description: "Hand-crafted pizza with fresh ingredients, premium cheese, and our signature sauce. Choose from various toppings to create your perfect slice.",
-    price: "$18.99",
+    price: "GH₵ 120.00",
     image: pizzaImage,
     category: "Main Course"
   },
@@ -26,7 +26,7 @@ const menuItems = [
     id: 3,
     name: "Special Fried Rice",
     description: "Perfectly seasoned fried rice with fresh vegetables, eggs, and premium ingredients. A delightful fusion of flavors in every bite.",
-    price: "$13.99",
+    price: "GH₵ 75.00",
     image: friedRiceImage,
     category: "Main Course"
   },
@@ -34,7 +34,7 @@ const menuItems = [
     id: 4,
     name: "Fresh Beverages",
     description: "Refreshing selection of fruit juices, soft drinks, and specialty beverages. Made with fresh ingredients to complement your meal perfectly.",
-    price: "$4.99",
+    price: "GH₵ 25.00",
     image: beveragesImage,
     category: "Beverages"
   }
