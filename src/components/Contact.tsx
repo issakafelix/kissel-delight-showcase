@@ -59,7 +59,7 @@ const Contact = () => {
         <div className="mt-16">
           <div className="text-center mb-8">
             <h3 className="text-3xl font-bold text-earth-brown mb-4">Find Us Here</h3>
-            <p className="text-muted-foreground">Located on the vibrant Oxford Street, Osu - Accra, Ghana</p>
+            <p className="text-muted-foreground">Located at Kasoa-Fetteh Kakraba, adjacent KAFF University</p>
           </div>
           
           <div className="max-w-4xl mx-auto">
