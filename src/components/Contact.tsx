@@ -65,7 +65,7 @@ const Contact = () => {
           <div className="max-w-4xl mx-auto">
             <div className="map-container rounded-xl overflow-hidden shadow-elegant border border-golden/20">
               <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3970.9550730874687!2d-0.18aborr6944!3d5.5560137!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xfdf9a1b5e2c4c27%3A0x8e0d8e1e5b3c1f0a!2sOxford%20St%2C%20Osu%2C%20Accra%2C%20Ghana!5e0!3m2!1sen!2sgh!4v1709123456789!5m2!1sen!2sgh"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3970.5!2d-0.4167!3d5.5333!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0xfdf9c1c0e2f1b7d%3A0x5b7c1f0a8e0d8e1e!2sKasoa%2C%20Ghana!5e0!3m2!1sen!2sgh!4v1709123456789!5m2!1sen!2sgh"
                 width="100%"
                 height="400"
                 style={{ border: 0 }}
