@@ -26,7 +26,7 @@ const menuItems = [
     id: 3,
     name: "Special Fried Rice",
     description: "Perfectly seasoned fried rice with fresh vegetables, eggs, and premium ingredients. A delightful fusion of flavors in every bite.",
-    price: "$13.99",
+    price: "GH₵ 75.00",
     image: friedRiceImage,
     category: "Main Course"
   },
