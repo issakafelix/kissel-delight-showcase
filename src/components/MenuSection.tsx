@@ -34,7 +34,7 @@ const menuItems = [
     id: 4,
     name: "Fresh Beverages",
     description: "Refreshing selection of fruit juices, soft drinks, and specialty beverages. Made with fresh ingredients to complement your meal perfectly.",
-    price: "$4.99",
+    price: "GH₵ 25.00",
     image: beveragesImage,
     category: "Beverages"
   }

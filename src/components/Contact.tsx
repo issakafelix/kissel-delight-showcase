@@ -78,7 +78,7 @@ const Contact = () => {
             
             <div className="mt-6 text-center">
               <p className="text-muted-foreground mb-4">
-                Easily accessible by public transport • Free parking available • Wheelchair accessible
+                Easily accessible by trotro & taxi • Parking available • Located on Oxford Street, Osu
               </p>
               <Button variant="hero" size="lg">
                 Get Directions
