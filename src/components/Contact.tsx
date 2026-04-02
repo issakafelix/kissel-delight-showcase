@@ -80,9 +80,11 @@ const Contact = () => {
               <p className="text-muted-foreground mb-4">
                 Easily accessible by trotro & taxi • Parking available • Adjacent KAAF University, Kasoa
               </p>
-              <Button variant="hero" size="lg">
-                Get Directions
-              </Button>
+              <a href="https://www.google.com/maps/dir/?api=1&destination=KAAF+University+College,Fetteh+Kakraba,Kasoa,Ghana" target="_blank" rel="noopener noreferrer">
+                <Button variant="hero" size="lg">
+                  Get Directions
+                </Button>
+              </a>
             </div>
           </div>
         </div>
