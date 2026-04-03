@@ -34,10 +34,10 @@ const Footer = () => {
           <div>
             <h4 className="text-lg font-semibold mb-4 text-golden">Contact Info</h4>
             <div className="space-y-2 text-gray-300">
-              <p>123 Flavor Street</p>
-              <p>Cuisine City, FC 12345</p>
-              <p>Phone: (555) 123-FOOD</p>
-              <p>Email: info@kisselfood.com</p>
+              <p>Kasoa-Fetteh Kakraba</p>
+              <p>Adjacent KAAF University, Kasoa</p>
+              <p>Phone: <a href="tel:+233537947455" className="hover:text-golden transition-colors">+233 537 947 455</a></p>
+              <p>Email: <a href="mailto:info@kisselfood.com" className="hover:text-golden transition-colors">info@kisselfood.com</a></p>
             </div>
           </div>
         </div>

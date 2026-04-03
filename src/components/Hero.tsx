@@ -17,7 +17,7 @@ const Hero = () => {
         </h1>
         <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto animate-slide-up">
           Experience the finest flavors with our carefully crafted dishes. 
-          From traditional Nigerian cuisine to international favorites, we serve excellence on every plate.
+          From traditional Ghanaian cuisine to international favorites, we serve excellence on every plate.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center animate-scale-in">
           <a href="#menu">
