@@ -76,9 +76,15 @@ const MenuSection = () => {
               </CardHeader>
               <CardContent className="pt-0">
                 <p className="text-muted-foreground mb-4 leading-relaxed">{item.description}</p>
-                <Button variant="hero" className="w-full">
-                  Order Now
-                </Button>
+                <a
+                  href={`https://wa.me/233537947455?text=${encodeURIComponent(`Hi, I'd like to order ${item.name} (${item.price}). Please confirm availability.`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant="hero" className="w-full">
+                    Order Now
+                  </Button>
+                </a>
               </CardContent>
             </Card>
           ))}
