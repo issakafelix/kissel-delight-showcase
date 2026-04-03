@@ -152,9 +152,15 @@ const Contact = () => {
           <h3 className="text-2xl font-bold text-earth-brown mb-4">Follow Us</h3>
           <p className="text-muted-foreground mb-6">Stay updated with our latest dishes and special offers</p>
           <div className="flex justify-center space-x-4">
-            <Button variant="elegant">Facebook</Button>
-            <Button variant="elegant">Instagram</Button>
-            <Button variant="elegant">Twitter</Button>
+            <a href="https://facebook.com/kisselfood" target="_blank" rel="noopener noreferrer">
+              <Button variant="elegant">Facebook</Button>
+            </a>
+            <a href="https://instagram.com/kisselfood" target="_blank" rel="noopener noreferrer">
+              <Button variant="elegant">Instagram</Button>
+            </a>
+            <a href="https://twitter.com/kisselfood" target="_blank" rel="noopener noreferrer">
+              <Button variant="elegant">Twitter</Button>
+            </a>
           </div>
         </div>
       </div>

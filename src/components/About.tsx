@@ -22,7 +22,7 @@ const About = () => {
                 Our kitchen combines traditional cooking methods with modern techniques to create dishes that honor their origins while satisfying contemporary tastes. Every meal is prepared with love, care, and the finest ingredients.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                From our signature Jollof rice that captures the essence of Nigerian cuisine to our artisan pizzas that celebrate international flavors, we are committed to delivering excellence in every bite.
+                From our signature Jollof rice that captures the essence of Ghanaian cuisine to our artisan pizzas that celebrate international flavors, we are committed to delivering excellence in every bite.
               </p>
             </div>
             
