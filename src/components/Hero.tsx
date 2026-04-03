@@ -20,12 +20,16 @@ const Hero = () => {
           From traditional Nigerian cuisine to international favorites, we serve excellence on every plate.
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center animate-scale-in">
-          <Button variant="hero" size="lg" className="text-lg px-8 py-6">
-            View Our Menu
-          </Button>
-          <Button variant="elegant" size="lg" className="text-lg px-8 py-6">
-            Make Reservation
-          </Button>
+          <a href="#menu">
+            <Button variant="hero" size="lg" className="text-lg px-8 py-6">
+              View Our Menu
+            </Button>
+          </a>
+          <a href="https://wa.me/233537947455?text=Hi%2C%20I%27d%20like%20to%20make%20a%20reservation" target="_blank" rel="noopener noreferrer">
+            <Button variant="elegant" size="lg" className="text-lg px-8 py-6">
+              Make Reservation
+            </Button>
+          </a>
         </div>
       </div>
       
