@@ -1,11 +1,13 @@
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ShoppingBag } from "lucide-react";
+import { useCart } from "@/context/CartContext";
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { cartCount, setIsCartOpen } = useCart();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,6 +64,18 @@ const Header = () => {
           </nav>
           
           <div className="hidden md:flex items-center space-x-4">
+            <button 
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-2 text-white hover:text-primary transition-colors"
+              aria-label="Open Cart"
+            >
+              <ShoppingBag className={cn("w-6 h-6", scrolled ? "text-foreground" : "text-white")} />
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary rounded-full translate-x-1/4 -translate-y-1/4">
+                  {cartCount}
+                </span>
+              )}
+            </button>
             <a href="#reservation">
               <Button 
                 variant={scrolled ? "default" : "outline"} 
@@ -75,7 +89,18 @@ const Header = () => {
             </a>
           </div>
 
-          {/* Mobile Menu Toggle Button */}
+          <button 
+            className="md:hidden relative z-50 p-2 mr-2"
+            onClick={() => setIsCartOpen(true)}
+          >
+            <ShoppingBag className={cn("w-6 h-6", scrolled || isMobileMenuOpen ? "text-foreground" : "text-white")} />
+            {cartCount > 0 && (
+              <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary rounded-full translate-x-1/4 -translate-y-1/4">
+                {cartCount}
+              </span>
+            )}
+          </button>
+          
           <button 
             className="md:hidden relative z-50 p-2"
             onClick={toggleMobileMenu}

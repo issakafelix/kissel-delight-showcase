@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/context/CartContext";
 
 import jollofImg from "@/assets/jollof-rice.jpg";
 import friedRiceImg from "@/assets/fried-rice.jpg";
@@ -102,46 +103,53 @@ const menuData = {
   ]
 };
 
-const MenuCard = ({ item }: { item: any }) => (
-  <Card className="overflow-hidden hover:shadow-warm transition-all duration-300 transform group bg-gradient-card border-golden/20 h-full flex flex-col">
-    <div className="relative h-64 overflow-hidden">
-      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors z-10" />
-      {item.badge && (
-        <span className="absolute top-4 right-4 z-20 bg-golden text-earth-brown text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
-          {item.badge}
-        </span>
-      )}
-      <img 
-        src={item.image} 
-        alt={item.name}
-        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        onError={(e) => {
-          e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
-        }}
-      />
-    </div>
-    <CardHeader className="flex-1">
-      <div className="flex justify-between items-start gap-4">
-        <div>
-          <CardTitle className="text-2xl text-earth-brown dark:text-foreground mb-2 group-hover:text-primary transition-colors">{item.name}</CardTitle>
-          <CardDescription className="text-sm text-foreground/80 leading-relaxed max-w-[200px]">{item.description}</CardDescription>
-        </div>
-        <span className="text-xl font-bold text-primary whitespace-nowrap">{item.price}</span>
+const MenuCard = ({ item }: { item: any }) => {
+  const { addToCart } = useCart();
+  
+  return (
+    <Card className="overflow-hidden hover:shadow-warm transition-all duration-300 transform group bg-gradient-card border-golden/20 h-full flex flex-col">
+      <div className="relative h-64 overflow-hidden">
+        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors z-10" />
+        {item.badge && (
+          <span className="absolute top-4 right-4 z-20 bg-golden text-earth-brown text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
+            {item.badge}
+          </span>
+        )}
+        <img 
+          src={item.image} 
+          alt={item.name}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          onError={(e) => {
+            e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
+          }}
+        />
       </div>
-    </CardHeader>
-    <CardContent className="pt-0 mt-auto">
-      <a
-        href={`https://wa.me/233537947455?text=${encodeURIComponent(`Hi, I'd like to order ${item.name} (${item.price}).`)}`}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <Button variant="outline" className="w-full hover:bg-primary hover:text-white transition-colors border-primary/50 text-primary">
-          Order to Table
+      <CardHeader className="flex-1">
+        <div className="flex justify-between items-start gap-4">
+          <div>
+            <CardTitle className="text-2xl text-earth-brown dark:text-foreground mb-2 group-hover:text-primary transition-colors">{item.name}</CardTitle>
+            <CardDescription className="text-sm text-foreground/80 leading-relaxed max-w-[200px]">{item.description}</CardDescription>
+          </div>
+          <span className="text-xl font-bold text-primary whitespace-nowrap">{item.price}</span>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0 mt-auto">
+        <Button 
+          onClick={() => addToCart({
+            id: item.id,
+            name: item.name,
+            price: parseFloat(item.price.replace("GH₵", "").trim()),
+            image: item.image
+          })}
+          variant="outline" 
+          className="w-full hover:bg-primary hover:text-white transition-colors border-primary/50 text-primary"
+        >
+          Add to Order
         </Button>
-      </a>
-    </CardContent>
-  </Card>
-);
+      </CardContent>
+    </Card>
+  );
+};
 
 const MenuSection = () => {
   return (
