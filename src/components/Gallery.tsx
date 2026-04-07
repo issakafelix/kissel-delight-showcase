@@ -50,6 +50,9 @@ const Gallery = () => {
                 alt={img.alt}
                 className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
                 loading="lazy"
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800&q=80";
+                }}
               />
             </div>
           ))}

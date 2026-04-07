@@ -2,28 +2,73 @@ import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const Cart = () => {
   const { cartItems, removeFromCart, updateQuantity, isCartOpen, setIsCartOpen, cartTotal, clearCart } = useCart();
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleCheckout = () => {
-    if (cartItems.length === 0) return;
-
-    let orderText = `*New Order from Kissel Food:*\n\n`;
+  const onSuccess = (reference: Record<string, unknown>) => {
+    setIsProcessing(false);
+    
+    let orderText = `*New Order from Kissel Food:*\n✅ *PAID VIA PAYSTACK (Ref: ${reference.reference})*\n\n`;
     cartItems.forEach((item) => {
       orderText += `▪️ ${item.quantity}x ${item.name} - GH₵${(item.price * item.quantity).toFixed(2)}\n`;
     });
-    orderText += `\n*Total Due: GH₵${cartTotal.toFixed(2)}*`;
-    orderText += `\n\nPlease let me know the payment and delivery/pickup instructions.`;
+    orderText += `\n*Total Paid: GH₵${cartTotal.toFixed(2)}*`;
+    orderText += `\nClient Email: ${email}\nClient Phone: ${phone}\n\nPlease proceed with fulfilling the order.`;
 
     const waLink = `https://wa.me/233537947455?text=${encodeURIComponent(orderText)}`;
     
-    // Open WhatsApp
+    // Open WhatsApp natively
     window.open(waLink, "_blank");
     
-    // Clear cart after sequence
+    toast.success("Payment Received Successfully!");
+    
     clearCart();
     setIsCartOpen(false);
+  };
+
+  const onClose = () => {
+    setIsProcessing(false);
+    toast.error("Payment dropped or cancelled.");
+  };
+
+  const handleCheckout = () => {
+    if (cartItems.length === 0) return;
+    if (!email.trim() || !phone.trim()) {
+        toast.error("Contact details are required to process payments securely.");
+        return;
+    }
+    
+    setIsProcessing(true);
+    
+    // Create direct connection to Paystack without node modules
+    const script = document.createElement('script');
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.async = true;
+    script.onload = () => {
+       const handler = (window as any).PaystackPop.setup({
+          key: 'pk_test_7912835ae75c1fccc7a9f6ccb7df343ead3daad7', // Live Test Key
+          email: email,
+          amount: cartTotal * 100, // Pesewas
+          currency: 'GHS',
+          ref: '' + Math.floor((Math.random() * 1000000000) + 1), 
+          callback: function(response: any) {
+             onSuccess(response);
+          },
+          onClose: function() {
+             onClose();
+          }
+       });
+       handler.openIframe();
+    };
+    document.body.appendChild(script);
   };
 
   return (
@@ -86,19 +131,36 @@ const Cart = () => {
         </div>
 
         {cartItems.length > 0 && (
-          <div className="p-6 border-t border-border bg-muted/10">
-            <div className="flex items-center justify-between font-medium text-muted-foreground mb-2">
-              <span>Subtotal</span>
-              <span>GH₵{cartTotal.toFixed(2)}</span>
-            </div>
-            <div className="flex items-center justify-between font-bold text-2xl text-foreground mb-6">
-              <span>Total</span>
-              <span className="text-primary">GH₵{cartTotal.toFixed(2)}</span>
+          <div className="p-6 border-t border-border bg-muted/10 space-y-4">
+            <div className="space-y-3 pb-4 border-b border-border/50">
+               <div>
+                 <Label htmlFor="email" className="text-xs font-semibold text-muted-foreground uppercase">Email Receipt</Label>
+                 <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1 shadow-none" />
+               </div>
+               <div>
+                 <Label htmlFor="phone" className="text-xs font-semibold text-muted-foreground uppercase">Mobile Money / Whatsapp No.</Label>
+                 <Input id="phone" type="tel" placeholder="054 123 4567" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 shadow-none" />
+               </div>
             </div>
             
-            <Button onClick={handleCheckout} size="lg" className="w-full py-6 text-lg rounded-xl shadow-warm">
-              Checkout via WhatsApp
+            <div>
+              <div className="flex items-center justify-between font-medium text-muted-foreground mb-2">
+                <span>Subtotal</span>
+                <span>GH₵{cartTotal.toFixed(2)}</span>
+              </div>
+              <div className="flex items-center justify-between font-bold text-2xl text-foreground mb-4">
+                <span>Total</span>
+                <span className="text-primary">GH₵{cartTotal.toFixed(2)}</span>
+              </div>
+            </div>
+            
+            <Button onClick={handleCheckout} disabled={isProcessing} size="lg" className="w-full py-6 text-lg rounded-xl shadow-warm flex items-center justify-center">
+              {isProcessing ? "Processing..." : `Pay GH₵${cartTotal.toFixed(2)} Securely`}
             </Button>
+            
+            <p className="text-center text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
+               <span className="text-green-600">🔒</span> Secured by Paystack
+            </p>
           </div>
         )}
       </SheetContent>

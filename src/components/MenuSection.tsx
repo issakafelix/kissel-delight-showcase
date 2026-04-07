@@ -22,7 +22,7 @@ const menuData = {
       name: "Assorted Jollof",
       description: "A premium bowl of Jollof rice loaded with a mix of chicken, beef, sausage, and veggies.",
       price: "GH₵ 85.00",
-      image: "https://loremflickr.com/800/600/meal,rice?lock=10",
+      image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80",
       badge: "Chef's Special"
     },
     {
@@ -103,7 +103,7 @@ const menuData = {
   ]
 };
 
-const MenuCard = ({ item }: { item: any }) => {
+const MenuCard = ({ item }: { item: { id: number; name: string; description: string; price: string; image: string; badge?: string } }) => {
   const { addToCart } = useCart();
   
   return (
