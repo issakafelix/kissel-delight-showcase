@@ -21,22 +21,27 @@ const Reservation = () => {
   const [guests, setGuests] = useState("");
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [occasion, setOccasion] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Keys used to force-reset uncontrolled Select components
+  const [formKey, setFormKey] = useState(0);
 
   const handleReservation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!date || !guests || !time || !name) {
-      toast.error("Please explicitly fill in all reservation details.");
+    if (!date || !guests || !time || !name || !phone) {
+      toast.error("Please fill in all required reservation details.");
       return;
     }
 
     const formattedDate = format(date, "PPP");
+    setIsSubmitting(true);
     
     try {
-      // Save to Firestore
       await db.saveReservation({
         name,
+        phone,
         date: formattedDate,
         time,
         guests,
@@ -46,12 +51,19 @@ const Reservation = () => {
       
       toast.success("Reservation confirmed! We eagerly await your arrival.");
       
-      // Reset Form
+      // Fully reset all fields
       setName("");
+      setPhone("");
       setOccasion("");
       setSpecialRequests("");
+      setDate(undefined);
+      setTime("");
+      setGuests("");
+      setFormKey(k => k + 1); // remounts Selects to clear displayed value
     } catch (e) {
-      toast.error("There was an error saving your reservation.");
+      toast.error("There was an error saving your reservation. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -79,15 +91,27 @@ const Reservation = () => {
                     <h3 className="text-2xl font-bold text-earth-brown dark:text-foreground mb-6">Reservation Details</h3>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="grid gap-2">
-                      <label className="text-sm font-medium">Your Name</label>
-                      <Input 
-                        placeholder="John Doe" 
-                        value={name} 
-                        onChange={(e) => setName(e.target.value)} 
-                        className="bg-background/50"
-                      />
+                  <div className="space-y-4" key={formKey}>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="grid gap-2">
+                        <label className="text-sm font-medium">Your Name *</label>
+                        <Input 
+                          placeholder="John Doe" 
+                          value={name} 
+                          onChange={(e) => setName(e.target.value)} 
+                          className="bg-background/50"
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <label className="text-sm font-medium">Phone Number *</label>
+                        <Input 
+                          type="tel"
+                          placeholder="+233 XX XXX XXXX" 
+                          value={phone} 
+                          onChange={(e) => setPhone(e.target.value)} 
+                          className="bg-background/50"
+                        />
+                      </div>
                     </div>
                     
                     <div className="grid gap-2">
@@ -187,8 +211,8 @@ const Reservation = () => {
                     </div>
                   </div>
 
-                  <Button type="submit" variant="hero" className="w-full mt-8 py-6 text-lg">
-                    Confirm Reservation
+                  <Button type="submit" variant="hero" className="w-full mt-8 py-6 text-lg" disabled={isSubmitting}>
+                    {isSubmitting ? "Booking your table..." : "Confirm Reservation"}
                   </Button>
                 </form>
               </CardContent>

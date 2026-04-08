@@ -237,7 +237,11 @@ const Admin = () => {
                           <span className="font-bold">{res.guests} Guests</span>
                        </div>
 
-                       {(res.occasion || res.specialRequests) && (
+                                               <div className="flex items-center justify-between border-b pb-4">
+                           <span className="text-sm font-medium">Phone:</span>
+                           <a href={`tel:${(res as any).phone}`} className="font-bold text-primary hover:underline">{(res as any).phone || "N/A"}</a>
+                        </div>
+{(res.occasion || res.specialRequests) && (
                          <div className="bg-accent/5 p-4 rounded-xl border border-accent/20">
                             {res.occasion && (
                               <p className="text-sm mb-2"><span className="font-bold text-accent">Occasion:</span> {res.occasion}</p>
