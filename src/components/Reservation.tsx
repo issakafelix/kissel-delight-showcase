@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { format } from "date-fns";
+import { db } from "@/lib/db";
 import { Calendar as CalendarIcon, Users, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import {
 } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -19,8 +21,10 @@ const Reservation = () => {
   const [guests, setGuests] = useState("");
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
+  const [occasion, setOccasion] = useState("");
+  const [specialRequests, setSpecialRequests] = useState("");
 
-  const handleReservation = (e: React.FormEvent) => {
+  const handleReservation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!date || !guests || !time || !name) {
       toast.error("Please explicitly fill in all reservation details.");
@@ -28,14 +32,27 @@ const Reservation = () => {
     }
 
     const formattedDate = format(date, "PPP");
-    const msg = `Hi, I'd like to reserve a table for ${guests} guests on ${formattedDate} at ${time}. Name: ${name}.`;
-    const waLink = `https://wa.me/233537947455?text=${encodeURIComponent(msg)}`;
     
-    toast.success("Redirecting to WhatsApp to confirm your reservation...");
-    
-    setTimeout(() => {
-      window.open(waLink, "_blank");
-    }, 1500);
+    try {
+      // Save to Firebase Firestore
+      await db.saveReservation({
+        name,
+        date: formattedDate,
+        time,
+        guests,
+        occasion,
+        specialRequests
+      });
+      
+      toast.success("Reservation confirmed! We eagerly await your arrival.");
+      
+      // Reset Form
+      setName("");
+      setOccasion("");
+      setSpecialRequests("");
+    } catch (e) {
+      toast.error("There was an error saving your reservation.");
+    }
   };
 
   return (
@@ -138,6 +155,35 @@ const Reservation = () => {
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
+                    
+                    <div className="grid gap-2">
+                       <label className="text-sm font-medium">Occasion (Optional)</label>
+                       <Select onValueChange={setOccasion}>
+                          <SelectTrigger className="bg-background/50">
+                             <SelectValue placeholder="Are you celebrating anything?" />
+                          </SelectTrigger>
+                          <SelectContent>
+                             <SelectItem value="Casual Dining">Casual Dining</SelectItem>
+                             <SelectItem value="Birthday">Birthday</SelectItem>
+                             <SelectItem value="Anniversary">Anniversary</SelectItem>
+                             <SelectItem value="Business Meeting">Business Meeting</SelectItem>
+                             <SelectItem value="Date Night">Date Night</SelectItem>
+                             <SelectItem value="Family Gathering">Family Gathering</SelectItem>
+                             <SelectItem value="Other">Other</SelectItem>
+                          </SelectContent>
+                       </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                      <label className="text-sm font-medium">Special Requests (Optional)</label>
+                      <Textarea 
+                        placeholder="Any dietary restrictions, seat preferences, or surprises we should know about?" 
+                        value={specialRequests} 
+                        onChange={(e) => setSpecialRequests(e.target.value)} 
+                        className="bg-background/50 resize-none"
+                        rows={3}
+                      />
                     </div>
                   </div>
 

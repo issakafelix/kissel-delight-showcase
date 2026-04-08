@@ -102,9 +102,9 @@ const Contact = () => {
             </CardHeader>
             <CardContent>
               <div className="text-muted-foreground space-y-2">
-                <p><strong>Phone:</strong><br />+233 537 947 455</p>
+                <p><strong>Phone:</strong><br />+233 54 991 0292</p>
                 <p><strong>Email:</strong><br />info@kisselfood.com</p>
-                <a href="https://wa.me/233537947455?text=Hi%2C%20I%27d%20like%20to%20make%20a%20reservation" target="_blank" rel="noopener noreferrer">
+                <a href="#reservation">
                   <Button variant="hero" className="mt-4">
                     Make Reservation
                   </Button>
