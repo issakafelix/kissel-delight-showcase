@@ -34,8 +34,8 @@ const Reservation = () => {
     const formattedDate = format(date, "PPP");
     
     try {
-      // Execute Non-Blocking Cloud Push
-      db.saveReservation({
+      // Save to Firestore
+      await db.saveReservation({
         name,
         date: formattedDate,
         time,

@@ -2,12 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD7SphPeu7L1d1Pay_bDssoYnPnPlZdOLA",
-  authDomain: "chatbot-85fe6.firebaseapp.com",
-  projectId: "chatbot-85fe6",
-  storageBucket: "chatbot-85fe6.firebasestorage.app",
-  messagingSenderId: "108894032043",
-  appId: "1:108894032043:web:abcd1234abcd1234abcd12" // Placeholder, Firebase may complain without it
+  apiKey: "AIzaSyAC9HZxPMxdOmSNtTiA6l942F3FptxRGp8",
+  authDomain: "kissel-food-production.firebaseapp.com",
+  projectId: "kissel-food-production",
+  storageBucket: "kissel-food-production.firebasestorage.app",
+  messagingSenderId: "27054489438",
+  appId: "1:27054489438:web:a353b95f2ec52d263bd9cf"
 };
 
 // Initialize Firebase

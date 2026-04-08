@@ -1,17 +1,7 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, updateDoc, doc } from "firebase/firestore";
+import { collection, addDoc, updateDoc, doc } from "firebase/firestore";
+import { dbFirestore as firestoreDb } from "@/lib/firebase";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyAC9HZxPMxdOmSNtTiA6l942F3FptxRGp8",
-  authDomain: "kissel-food-production.firebaseapp.com",
-  projectId: "kissel-food-production",
-  storageBucket: "kissel-food-production.firebasestorage.app",
-  messagingSenderId: "27054489438",
-  appId: "1:27054489438:web:a353b95f2ec52d263bd9cf"
-};
-
-const app = initializeApp(firebaseConfig);
-export const firestoreDb = getFirestore(app);
+export { firestoreDb };
 
 export interface OrderItem {
   id: number;
