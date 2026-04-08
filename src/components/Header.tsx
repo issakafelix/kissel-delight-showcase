@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Menu, X, ShoppingBag } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Header = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -64,6 +65,7 @@ const Header = () => {
           </nav>
           
           <div className="hidden md:flex items-center space-x-4">
+            <ThemeToggle scrolled={scrolled} />
             <button 
               onClick={() => setIsCartOpen(true)}
               className="relative p-2 text-white hover:text-primary transition-colors"
@@ -89,29 +91,32 @@ const Header = () => {
             </a>
           </div>
 
-          <button 
-            className="md:hidden relative z-50 p-2 mr-2"
-            onClick={() => setIsCartOpen(true)}
-          >
-            <ShoppingBag className={cn("w-6 h-6", scrolled || isMobileMenuOpen ? "text-foreground" : "text-white")} />
-            {cartCount > 0 && (
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary rounded-full translate-x-1/4 -translate-y-1/4">
-                {cartCount}
-              </span>
-            )}
-          </button>
-          
-          <button 
-            className="md:hidden relative z-50 p-2"
-            onClick={toggleMobileMenu}
-            aria-label="Toggle Menu"
-          >
-            {isMobileMenuOpen ? (
-              <X className={cn("w-6 h-6", (scrolled || isMobileMenuOpen) ? "text-foreground" : "text-white")} />
-            ) : (
-              <Menu className={cn("w-6 h-6", scrolled ? "text-foreground" : "text-white")} />
-            )}
-          </button>
+          <div className="md:hidden flex items-center">
+            <ThemeToggle scrolled={scrolled || isMobileMenuOpen} className="mr-2" />
+            <button 
+              className="relative z-50 p-2 mr-2"
+              onClick={() => setIsCartOpen(true)}
+            >
+              <ShoppingBag className={cn("w-6 h-6", scrolled || isMobileMenuOpen ? "text-foreground" : "text-white")} />
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary rounded-full translate-x-1/4 -translate-y-1/4">
+                  {cartCount}
+                </span>
+              )}
+            </button>
+            
+            <button 
+              className="relative z-50 p-2"
+              onClick={toggleMobileMenu}
+              aria-label="Toggle Menu"
+            >
+              {isMobileMenuOpen ? (
+                <X className={cn("w-6 h-6", (scrolled || isMobileMenuOpen) ? "text-foreground" : "text-white")} />
+              ) : (
+                <Menu className={cn("w-6 h-6", scrolled ? "text-foreground" : "text-white")} />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
