@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import Receipt, { ReservationReceiptData } from "@/components/Receipt";
 
 const Reservation = () => {
   const [date, setDate] = useState<Date>();
@@ -27,6 +28,7 @@ const Reservation = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Keys used to force-reset uncontrolled Select components
   const [formKey, setFormKey] = useState(0);
+  const [receiptData, setReceiptData] = useState<ReservationReceiptData | null>(null);
 
   const handleReservation = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,6 +51,20 @@ const Reservation = () => {
         specialRequests
       });
       
+      // Show receipt modal
+      setReceiptData({
+        type: "reservation",
+        refNumber: `RES-${Date.now().toString(36).toUpperCase()}`,
+        name,
+        phone,
+        date: formattedDate,
+        time,
+        guests,
+        occasion,
+        specialRequests,
+        timestamp: new Date().toISOString(),
+      });
+
       toast.success("Reservation confirmed! We eagerly await your arrival.");
       
       // Fully reset all fields
@@ -68,7 +84,9 @@ const Reservation = () => {
   };
 
   return (
-    <section id="reservation" className="py-24 bg-cream dark:bg-background/95 relative">
+    <>
+      <Receipt data={receiptData} onClose={() => setReceiptData(null)} />
+      <section id="reservation" className="py-24 bg-cream dark:bg-background/95 relative">
       <div className="container mx-auto px-4 z-10 relative">
         <div className="max-w-5xl mx-auto">
           <Card className="bg-card/90 backdrop-blur-md shadow-2xl border-golden/20 overflow-hidden">
@@ -221,6 +239,7 @@ const Reservation = () => {
         </div>
       </div>
     </section>
+    </>
   );
 };
 

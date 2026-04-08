@@ -7,27 +7,38 @@ import { toast } from "sonner";
 import { db } from "@/lib/db";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import Receipt, { OrderReceiptData } from "@/components/Receipt";
 
 const Cart = () => {
   const { cartItems, removeFromCart, updateQuantity, isCartOpen, setIsCartOpen, cartTotal, clearCart } = useCart();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [receiptData, setReceiptData] = useState<OrderReceiptData | null>(null);
 
   const onSuccess = async (reference: Record<string, unknown>) => {
     setIsProcessing(false);
+    const ref = String(reference.reference || 'internal-test');
+    const snapshot = {
+      customerEmail: email,
+      customerPhone: phone,
+      items: cartItems.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity })),
+      total: cartTotal,
+      paystackRef: ref,
+    };
 
     try {
-      await db.saveOrder({
+      await db.saveOrder(snapshot);
+
+      // Show receipt modal
+      setReceiptData({
+        type: "order",
+        refNumber: ref,
         customerEmail: email,
         customerPhone: phone,
-        items: cartItems.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity })),
+        items: snapshot.items,
         total: cartTotal,
-        paystackRef: String(reference.reference || 'internal-test')
-      });
-
-      toast.success("Payment Received! Your order has been dispatched to the kitchen.", {
-        description: "We are preparing your meal now!"
+        timestamp: new Date().toISOString(),
       });
 
       clearCart();
@@ -75,7 +86,9 @@ const Cart = () => {
   };
 
   return (
-    <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+    <>
+      <Receipt data={receiptData} onClose={() => setReceiptData(null)} />
+      <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
       <SheetContent className="w-full sm:max-w-md bg-background border-l-border flex flex-col p-0">
         <SheetHeader className="p-6 border-b border-border bg-muted/30">
           <SheetTitle className="flex items-center text-2xl font-bold text-foreground">
@@ -168,6 +181,7 @@ const Cart = () => {
         )}
       </SheetContent>
     </Sheet>
+    </>
   );
 };
 
