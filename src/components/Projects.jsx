@@ -1,8 +1,28 @@
 import netPulseImg from '../assets/netpulse.png';
 import chatbotImg from '../assets/chatbot.png';
+import kisselPng from '../assets/kissel.png';
 
 const Projects = () => {
   const projectList = [
+    {
+      title: 'Kissel Food',
+      img: kisselPng,
+      useBackground: false,
+      desc: 'Kissel Food — a modern restaurant showcase presenting authentic Ghanaian flavors with a vibrant menu, gallery, and online reservations.',
+      features: [
+        'Signature Jollof rice & chef specials',
+        'Online reservations & ordering',
+        'Vibrant gallery and interior photos'
+      ],
+      tags: ['Restaurant', 'UI', 'Menu'],
+      specs: [
+        { label: 'Site', value: 'Kissel Food' },
+        { label: 'Focus', value: 'Menu & Reservations' },
+        { label: 'Platform', value: 'Vercel' }
+      ],
+      url: 'https://kissel-delight-showcase.vercel.app/',
+      cta: 'View Website'
+    },
     {
       title: 'NetPulse',
       img: netPulseImg,
@@ -53,9 +73,23 @@ const Projects = () => {
         <div className="projects__grid stagger">
           {projectList.map((project, idx) => (
             <article key={idx} className="project-card">
-              <div className="project-card__image">
-                <img src={project.img} alt={project.title} />
-              </div>
+                {project.useBackground ? (
+                  <div
+                    className="project-card__image"
+                    style={{
+                      backgroundImage: `url(${project.img})`,
+                      backgroundSize: 'contain',
+                      backgroundPosition: 'center',
+                      backgroundRepeat: 'no-repeat',
+                      height: '220px'
+                    }}
+                    aria-label={project.title}
+                  />
+                ) : (
+                  <div className="project-card__image">
+                    <img src={project.img} alt={project.title} />
+                  </div>
+                )}
               <div className="project-card__body">
                 <div className="project-card__layout">
                   <div className="project-card__main">

@@ -30,10 +30,10 @@ const Skills = () => {
       status: 'Personal Passion',
       bars: 4,
       skills: [
-        'Networking: TCP/IP, DNS, Routing, Network Diagnostics (NetPulse)',
+        'Daily Tools: Wireshark, Nmap, Cisco Packet Tracer & online networking resources',
+        'Networking: TCP/IP, DNS, Routing, Network Diagnostics',
         'Security: Web security best practices, Penetration Testing (Kali Linux)',
-        'Infrastructure: Secure deployment, System Administration',
-        'Programming: Python, Java, C++ for backend scripting & tooling'
+        'Programming: Python, Java, C++ for backend scripting'
       ]
     }
   ];

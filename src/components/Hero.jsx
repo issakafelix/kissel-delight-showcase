@@ -1,4 +1,4 @@
-import profilePic from '../assets/profile2.jpg';
+import profilePic from '../assets/shot-port.png';
 
 const Hero = () => {
   return (
@@ -28,6 +28,10 @@ const Hero = () => {
           <a href="#contact" className="btn btn--outline">Get In Touch</a>
         </div>
 
+      </div>
+
+      <div className="hero__photo-wrapper">
+        <img src={profilePic} alt="Issaka Felix" className="hero__photo" />
       </div>
     </section>
   );
