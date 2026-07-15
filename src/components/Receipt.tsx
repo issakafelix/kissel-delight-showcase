@@ -1,16 +1,27 @@
 import { useRef } from "react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { CheckCircle, Printer, X, UtensilsCrossed, CalendarCheck } from "lucide-react";
+import { CheckCircle, Printer, X, UtensilsCrossed, CalendarCheck, MapPin, MessageCircle, Bike, Store } from "lucide-react";
+import { formatGHS } from "@/lib/menu-data";
+import type { OrderType } from "@/lib/db";
+
+const RESTAURANT_WHATSAPP = "233549910292";
 
 // ─── Order Receipt ────────────────────────────────────────────────────────────
 export interface OrderReceiptData {
   type: "order";
   refNumber: string;
+  trackingId?: string;
   customerEmail: string;
   customerPhone: string;
   items: { name: string; price: number; quantity: number }[];
+  subtotal?: number;
+  deliveryFee?: number;
   total: number;
+  orderType?: OrderType;
+  deliveryAddress?: string;
+  notes?: string;
   timestamp: string;
 }
 
@@ -34,6 +45,35 @@ interface ReceiptProps {
   data: ReceiptData | null;
   onClose: () => void;
 }
+
+const buildWhatsAppLink = (data: ReceiptData) => {
+  let text: string;
+  if (data.type === "order") {
+    const lines = data.items.map((i) => `• ${i.quantity}x ${i.name} — ${formatGHS(i.price * i.quantity)}`);
+    text = [
+      `Hello Kissel Kitchen! 🍽️`,
+      `I just placed an order (Ref: ${data.refNumber}).`,
+      ...(data.trackingId ? [`Tracking ID: ${data.trackingId}`] : []),
+      ``,
+      ...lines,
+      ``,
+      `Total: ${formatGHS(data.total)}`,
+      data.orderType === "delivery"
+        ? `Type: Delivery — ${data.deliveryAddress || ""}`
+        : `Type: Pickup`,
+      `Phone: ${data.customerPhone}`,
+    ].join("\n");
+  } else {
+    text = [
+      `Hello Kissel Kitchen! 🍽️`,
+      `I just reserved a table (Ref: ${data.refNumber}).`,
+      `Name: ${data.name}`,
+      `Date: ${data.date} at ${data.time}`,
+      `Guests: ${data.guests}`,
+    ].join("\n");
+  }
+  return `https://wa.me/${RESTAURANT_WHATSAPP}?text=${encodeURIComponent(text)}`;
+};
 
 const Receipt = ({ data, onClose }: ReceiptProps) => {
   const printRef = useRef<HTMLDivElement>(null);
@@ -84,13 +124,18 @@ const Receipt = ({ data, onClose }: ReceiptProps) => {
 
   return (
     <Dialog open={!!data} onOpenChange={onClose}>
-      <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-golden/20 shadow-2xl">
+      <DialogContent className="max-w-md p-0 overflow-hidden rounded-2xl border-golden/20 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Actions bar */}
         <div className="flex items-center justify-between px-6 pt-5 pb-0">
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={handlePrint} className="gap-2 text-xs h-8">
               <Printer className="w-3.5 h-3.5" /> Print / Save PDF
             </Button>
+            <a href={buildWhatsAppLink(data)} target="_blank" rel="noopener noreferrer">
+              <Button size="sm" variant="outline" className="gap-2 text-xs h-8 text-green-600 border-green-600/40 hover:bg-green-600/10 hover:text-green-700">
+                <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+              </Button>
+            </a>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors p-1">
             <X className="w-4 h-4" />
@@ -153,7 +198,31 @@ const OrderBody = ({ data }: { data: OrderReceiptData }) => (
         <p className="label text-xs uppercase tracking-wider text-muted-foreground font-semibold">Phone</p>
         <p className="value text-sm font-medium">{data.customerPhone}</p>
       </div>
+      {data.orderType && (
+        <div>
+          <p className="label text-xs uppercase tracking-wider text-muted-foreground font-semibold">Order Type</p>
+          <p className="value text-sm font-medium flex items-center gap-1.5">
+            {data.orderType === "delivery" ? <Bike className="w-3.5 h-3.5" /> : <Store className="w-3.5 h-3.5" />}
+            {data.orderType === "delivery" ? "Delivery" : "Pickup"}
+          </p>
+        </div>
+      )}
+      {data.orderType === "delivery" && data.deliveryAddress && (
+        <div>
+          <p className="label text-xs uppercase tracking-wider text-muted-foreground font-semibold">Deliver To</p>
+          <p className="value text-sm font-medium flex items-start gap-1.5">
+            <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" /> {data.deliveryAddress}
+          </p>
+        </div>
+      )}
     </div>
+
+    {data.notes && (
+      <div className="bg-muted/40 rounded-xl p-3 border border-border">
+        <p className="label text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-1">Order Notes</p>
+        <p className="text-sm italic text-muted-foreground">"{data.notes}"</p>
+      </div>
+    )}
 
     <div className="border border-border rounded-xl overflow-hidden">
       <table className="items-table w-full text-sm">
@@ -169,12 +238,18 @@ const OrderBody = ({ data }: { data: OrderReceiptData }) => (
             <tr key={i} className="border-t border-border/50">
               <td className="p-3 font-medium">{item.name}</td>
               <td className="p-3 text-center text-muted-foreground">×{item.quantity}</td>
-              <td className="p-3 text-right font-semibold">GH₵{(item.price * item.quantity).toFixed(2)}</td>
+              <td className="p-3 text-right font-semibold">{formatGHS(item.price * item.quantity)}</td>
             </tr>
           ))}
+          {typeof data.deliveryFee === "number" && data.deliveryFee > 0 && (
+            <tr className="border-t border-border/50">
+              <td colSpan={2} className="p-3 text-muted-foreground">Delivery Fee</td>
+              <td className="p-3 text-right font-semibold">{formatGHS(data.deliveryFee)}</td>
+            </tr>
+          )}
           <tr className="border-t-2 border-golden/40 bg-primary/5">
             <td colSpan={2} className="p-3 font-bold text-base total-row text-primary">Total Paid</td>
-            <td className="p-3 text-right font-black text-lg text-primary">GH₵{data.total.toFixed(2)}</td>
+            <td className="p-3 text-right font-black text-lg text-primary">{formatGHS(data.total)}</td>
           </tr>
         </tbody>
       </table>
@@ -183,6 +258,15 @@ const OrderBody = ({ data }: { data: OrderReceiptData }) => (
     <p className="text-xs text-center text-muted-foreground bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-2">
       ✅ Payment verified via Paystack
     </p>
+
+    {data.trackingId && (
+      <Link
+        to={`/track?id=${data.trackingId}`}
+        className="block text-center text-sm font-semibold text-primary bg-primary/5 border border-primary/20 rounded-lg p-3 hover:bg-primary/10 transition-colors"
+      >
+        📍 Track your order live → Tracking ID: <span className="font-mono">{data.trackingId.slice(0, 8)}</span>
+      </Link>
+    )}
   </div>
 );
 

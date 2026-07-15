@@ -1,124 +1,53 @@
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Search } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
+import { db } from "@/lib/db";
+import { MenuItem, MenuCategory, CATEGORY_LABELS, FALLBACK_MENU, formatGHS } from "@/lib/menu-data";
 
-import jollofImg from "@/assets/jollof-rice.jpg";
-import friedRiceImg from "@/assets/fried-rice.jpg";
-import beveragesImg from "@/assets/beverages.jpg";
-import pizzaImg from "@/assets/pizza.jpg";
+type CategoryFilter = MenuCategory | "all";
 
-const menuData = {
-  mains: [
-    {
-      id: 1,
-      name: "Classic Jollof Rice",
-      description: "Our signature rich, smoky, and perfectly spiced traditional Jollof rice cooked in a savory tomato broth.",
-      price: "GH₵ 50.00",
-      image: jollofImg,
-      badge: "Popular"
-    },
-    {
-      id: 2,
-      name: "Assorted Jollof",
-      description: "A premium bowl of Jollof rice loaded with a mix of chicken, beef, sausage, and veggies.",
-      price: "GH₵ 85.00",
-      image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80",
-      badge: "Chef's Special"
-    },
-    {
-      id: 3,
-      name: "Special Fried Rice",
-      description: "Wok-tossed fragrant rice with fresh vegetables and eggs.",
-      price: "GH₵ 45.00",
-      image: friedRiceImg
-    },
-    {
-      id: 4,
-      name: "Assorted Fried Rice",
-      description: "Premium fried rice tossed with assorted meats, vegetables, and scrambled eggs.",
-      price: "GH₵ 80.00",
-      image: "https://loremflickr.com/800/600/fried,rice?lock=20"
-    },
-    {
-      id: 5,
-      name: "Indomie Noodles",
-      description: "Savory stir-fried Indomie noodles mixed with spices, eggs, vegetables.",
-      price: "GH₵ 40.00",
-      image: "https://loremflickr.com/800/600/noodles?lock=30"
-    },
-    {
-      id: 6,
-      name: "Assorted Indomie",
-      description: "A large portion of stir-fried noodles infused with assorted proteins and vegetables.",
-      price: "GH₵ 60.00",
-      image: "https://loremflickr.com/800/600/ramen?lock=40"
-    }
-  ],
-  pastries: [
-    {
-      id: 7,
-      name: "Golden Meat Pie",
-      description: "Flaky, buttery crust filled with a savory and well-seasoned chunky meat sauce.",
-      price: "GH₵ 25.00",
-      image: "https://loremflickr.com/800/600/pastry,pie?lock=50"
-    },
-    {
-      id: 8,
-      name: "Decadent Cake",
-      description: "A slice of our rich, freshly baked daily specialty cake. (Chocolate or Vanilla).",
-      price: "GH₵ 30.00",
-      image: "https://loremflickr.com/800/600/cake,dessert?lock=60",
-      badge: "Sweet"
-    },
-    {
-      id: 9,
-      name: "Artisan Pizza Slice",
-      description: "Freshly baked pizza with an assortment of savory toppings.",
-      price: "GH₵ 40.00",
-      image: pizzaImg
-    }
-  ],
-  minerals: [
-    {
-      id: 10,
-      name: "Assorted Soft Drinks",
-      description: "Chilled selection of popular soft drinks (Coke, Sprite, Fanta).",
-      price: "GH₵ 15.00",
-      image: beveragesImg
-    },
-    {
-      id: 11,
-      name: "Malta & Dark Drinks",
-      description: "A rich selection of malt drinks for that extra energy.",
-      price: "GH₵ 20.00",
-      image: "https://loremflickr.com/800/600/soda,bottle?lock=70"
-    },
-    {
-      id: 12,
-      name: "Fresh Fruit Juices",
-      description: "Locally pressed fruit juices served icy cold to refresh your palate.",
-      price: "GH₵ 25.00",
-      image: "https://loremflickr.com/800/600/juice,drink?lock=80"
-    }
-  ]
-};
+const CATEGORY_FILTERS: { value: CategoryFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "mains", label: CATEGORY_LABELS.mains },
+  { value: "pastries", label: CATEGORY_LABELS.pastries },
+  { value: "drinks", label: CATEGORY_LABELS.drinks },
+];
 
-const MenuCard = ({ item }: { item: { id: number; name: string; description: string; price: string; image: string; badge?: string } }) => {
+const MenuCard = ({ item }: { item: MenuItem }) => {
   const { addToCart } = useCart();
-  
+
   return (
-    <Card className="overflow-hidden hover:shadow-warm transition-all duration-300 transform group bg-gradient-card border-golden/20 h-full flex flex-col">
+    <Card className={cn(
+      "overflow-hidden hover:shadow-warm transition-all duration-300 transform group bg-gradient-card border-golden/20 h-full flex flex-col",
+      !item.available && "opacity-80"
+    )}>
       <div className="relative h-64 overflow-hidden">
         <div className="absolute inset-0 bg-black/10 group-hover:bg-black/0 transition-colors z-10" />
-        {item.badge && (
+        {item.badge && item.available && (
           <span className="absolute top-4 right-4 z-20 bg-golden text-earth-brown text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
             {item.badge}
           </span>
         )}
-        <img 
-          src={item.image} 
+        {!item.available && (
+          <div className="absolute inset-0 z-20 bg-black/50 flex items-center justify-center">
+            <span className="bg-destructive text-destructive-foreground text-sm font-bold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-lg">
+              Sold Out
+            </span>
+          </div>
+        )}
+        <img
+          src={item.image}
           alt={item.name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+          loading="lazy"
+          className={cn(
+            "w-full h-full object-cover transition-transform duration-700 group-hover:scale-110",
+            !item.available && "grayscale"
+          )}
           onError={(e) => {
             e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80";
           }}
@@ -130,21 +59,22 @@ const MenuCard = ({ item }: { item: { id: number; name: string; description: str
             <CardTitle className="text-2xl text-earth-brown dark:text-foreground mb-2 group-hover:text-primary transition-colors">{item.name}</CardTitle>
             <CardDescription className="text-sm text-foreground/80 leading-relaxed max-w-[200px]">{item.description}</CardDescription>
           </div>
-          <span className="text-xl font-bold text-primary whitespace-nowrap">{item.price}</span>
+          <span className="text-xl font-bold text-primary whitespace-nowrap">{formatGHS(item.price)}</span>
         </div>
       </CardHeader>
       <CardContent className="pt-0 mt-auto">
-        <Button 
+        <Button
           onClick={() => addToCart({
             id: item.id,
             name: item.name,
-            price: parseFloat(item.price.replace("GH₵", "").trim()),
+            price: item.price,
             image: item.image
           })}
-          variant="outline" 
-          className="w-full hover:bg-primary hover:text-white transition-colors border-primary/50 text-primary"
+          disabled={!item.available}
+          variant="outline"
+          className="w-full hover:bg-primary hover:text-white transition-colors border-primary/50 text-primary disabled:opacity-60"
         >
-          Add to Order
+          {item.available ? "Add to Order" : "Currently Unavailable"}
         </Button>
       </CardContent>
     </Card>
@@ -152,50 +82,101 @@ const MenuCard = ({ item }: { item: { id: number; name: string; description: str
 };
 
 const MenuSection = () => {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<CategoryFilter>("all");
+
+  // Live menu from Firestore; falls back to the static catalog when the
+  // collection is empty or the network/rules block the read.
+  const { data: menu } = useQuery({
+    queryKey: ["menu"],
+    queryFn: async () => {
+      const items = await db.fetchMenu();
+      return items.length > 0 ? items : FALLBACK_MENU;
+    },
+    placeholderData: FALLBACK_MENU,
+    retry: 1,
+    staleTime: 60_000,
+  });
+
+  const items = menu ?? FALLBACK_MENU;
+
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return items.filter((item) => {
+      if (category !== "all" && item.category !== category) return false;
+      if (!term) return true;
+      return (
+        item.name.toLowerCase().includes(term) ||
+        item.description.toLowerCase().includes(term)
+      );
+    });
+  }, [items, search, category]);
+
+  const grouped = useMemo(() => {
+    const categories: MenuCategory[] = ["mains", "pastries", "drinks"];
+    return categories
+      .map((cat) => ({ category: cat, items: filtered.filter((i) => i.category === cat) }))
+      .filter((group) => group.items.length > 0);
+  }, [filtered]);
+
   return (
     <section id="menu" className="py-24 bg-background relative">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-20">
+        <div className="text-center mb-12">
           <span className="text-primary font-bold tracking-widest uppercase text-sm mb-2 block">Our Expertise</span>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Discover Our Menu</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             From our sizzling hot Jollof straight from the pan to mouth-watering pastries. Our dishes are prepared exactly how you love them.
           </p>
         </div>
-        
+
+        {/* Search + category filters */}
+        <div className="max-w-3xl mx-auto mb-16 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search dishes, e.g. jollof, noodles, juice…"
+              className="pl-12 h-14 text-base rounded-full bg-muted/40 border-golden/20 focus-visible:ring-primary"
+            />
+          </div>
+          <div className="flex flex-wrap justify-center gap-2">
+            {CATEGORY_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                onClick={() => setCategory(f.value)}
+                className={cn(
+                  "px-5 py-2 rounded-full text-sm font-semibold uppercase tracking-wider transition-colors border",
+                  category === f.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-muted-foreground border-border hover:border-primary/50 hover:text-primary"
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="max-w-7xl mx-auto space-y-24">
-          {/* Mains Category */}
-          <div>
-            <div className="flex items-center gap-4 mb-8">
-              <h3 className="text-3xl font-bold text-earth-brown dark:text-foreground">Meals & Noodles</h3>
-              <div className="h-px bg-border flex-1"></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {menuData.mains.map(item => <MenuCard key={item.id} item={item} />)}
-            </div>
-          </div>
-
-          {/* Pastries Category */}
-          <div>
-            <div className="flex items-center gap-4 mb-8">
-              <h3 className="text-3xl font-bold text-earth-brown dark:text-foreground">Pastries</h3>
-              <div className="h-px bg-border flex-1"></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {menuData.pastries.map(item => <MenuCard key={item.id} item={item} />)}
-            </div>
-          </div>
-
-          {/* Minerals & Drinks Category */}
-          <div>
-            <div className="flex items-center gap-4 mb-8">
-              <h3 className="text-3xl font-bold text-earth-brown dark:text-foreground">Minerals & Drinks</h3>
-              <div className="h-px bg-border flex-1"></div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {menuData.minerals.map(item => <MenuCard key={item.id} item={item} />)}
-            </div>
-          </div>
+          {grouped.length === 0 ? (
+            <p className="text-center text-muted-foreground text-lg py-16">
+              No dishes match "{search}". Try a different search.
+            </p>
+          ) : (
+            grouped.map((group) => (
+              <div key={group.category}>
+                <div className="flex items-center gap-4 mb-8">
+                  <h3 className="text-3xl font-bold text-earth-brown dark:text-foreground">{CATEGORY_LABELS[group.category]}</h3>
+                  <div className="h-px bg-border flex-1"></div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {group.items.map(item => <MenuCard key={item.id} item={item} />)}
+                </div>
+              </div>
+            ))
+          )}
         </div>
 
       </div>

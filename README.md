@@ -1,73 +1,94 @@
-# Welcome to your Lovable project
+# Kissel Kitchen — Restaurant Ordering & Management Platform
 
-## Project info
+A production-ready restaurant website with online ordering, live order tracking, table
+reservations, and a real-time admin dashboard.
 
-**URL**: https://lovable.dev/projects/cc77c960-3462-45b2-9cb0-8eb0f0dfb981
+**Stack**: Vite · React 18 · TypeScript · Tailwind CSS · shadcn/ui · Firebase (Firestore +
+Auth) · Paystack (GHS) · Vercel serverless functions.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+**Customer**
+- Menu with live search, category filters, and sold-out states (served from Firestore, edits go live instantly)
+- Cart with pickup/delivery, delivery fee, order notes; persists across reloads
+- Paystack checkout (card + mobile money) — payments are **verified server-side** before an order is accepted
+- Printable receipt with WhatsApp share and a live order-tracking page (`/track`)
+- Table reservations with occasion + special requests
+- Light/dark theme, responsive, SPA
 
-**Use Lovable**
+**Staff (`/admin`, Firebase Auth login)**
+- Live orders board with lifecycle: Pending → Preparing → Ready → Completed (+ Cancel)
+- New-order sound + toast alerts, search, and status filters
+- Reservations board (Confirmed → Seated)
+- Analytics: today's/all-time revenue, active orders, average order value, 7-day revenue chart, top sellers
+- Menu manager: add/edit/delete dishes, prices, images, availability toggle, one-click seeding
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/cc77c960-3462-45b2-9cb0-8eb0f0dfb981) and start prompting.
+## Architecture
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+Browser ── Paystack inline JS ──► Paystack (payment)
+   │                                   ▲
+   │ POST /api/orders (reference+cart) │ verify (secret key)
+   ▼                                   │
+Vercel serverless fn ──────────────────┘
+   │  recompute totals from menu prices, reject mismatches,
+   │  idempotent per payment reference
+   ▼
+Firestore ◄── security rules: clients can't create/edit orders;
+              staff (Firebase Auth) manage everything; menu is public-read
 ```
 
-**Edit a file directly in GitHub**
+## Local development
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+npm install
+npm run dev          # UI only — checkout API is not served by Vite
+npx vercel dev       # full stack (UI + /api/orders) — needs .env, see below
+```
 
-**Use GitHub Codespaces**
+## Production setup (one-time)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### 1. Firebase
+1. Create/open your Firebase project → **Firestore Database → Create database** (Standard edition, ID `(default)`).
+2. **Rules tab** → paste the contents of [`firestore.rules`](firestore.rules) → Publish.
+3. **Authentication → Sign-in method** → enable **Email/Password**.
+4. **Authentication → Users → Add user** → create the staff login (e.g. `admin@yourrestaurant.com` + strong password).
+5. **Authentication → Settings → User actions** → **disable "Enable create (sign-up)"** so nobody can self-register.
+6. **Project settings → Service accounts → Generate new private key** — you'll paste this JSON into Vercel as `FIREBASE_SERVICE_ACCOUNT`.
 
-## What technologies are used for this project?
+### 2. Paystack
+1. Complete Paystack business verification to get **live** keys.
+2. Copy the **public** (`pk_live_…`) and **secret** (`sk_live_…`) keys from Settings → API Keys.
 
-This project is built with:
+### 3. Vercel environment variables
+Project → Settings → Environment Variables (see [`.env.example`](.env.example)):
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+| Variable | Value |
+|---|---|
+| `PAYSTACK_SECRET_KEY` | `sk_live_…` (server-only, never expose) |
+| `FIREBASE_SERVICE_ACCOUNT` | the service-account JSON, on one line |
+| `VITE_PAYSTACK_PUBLIC_KEY` | `pk_live_…` |
+| `VITE_FIREBASE_*` | your Firebase web config (optional — defaults are compiled in) |
 
-## How can I deploy this project?
+Redeploy after setting them.
 
-Simply open [Lovable](https://lovable.dev/projects/cc77c960-3462-45b2-9cb0-8eb0f0dfb981) and click on Share -> Publish.
+### 4. Seed the menu
+Open `https://your-domain/admin` → sign in → **Menu** tab → **Seed Default Menu**, then edit
+dishes/prices/photos to taste.
 
-## Can I connect a custom domain to my Lovable project?
+## Security model
 
-Yes, you can!
+- **Payments**: the client never decides what was paid. `/api/orders` verifies the Paystack
+  reference with the secret key, recomputes the total from Firestore menu prices, rejects
+  amount mismatches, and is idempotent per reference.
+- **Database**: Firestore rules block clients from creating/editing orders; staff actions
+  require a Firebase Auth session; the menu is read-only to the public.
+- **Admin**: real Firebase Auth (email/password), self-signup disabled.
+- Order tracking uses unguessable Firestore document IDs as capability URLs.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Customizing for a new restaurant
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+1. Search & replace branding (name, phone `+233549910292`, address) in `src/components/` and `src/lib/menu-data.ts`.
+2. Swap images in `public/menu/` and `src/assets/`.
+3. Point env vars at the new Firebase project + Paystack account.
+4. Adjust `DELIVERY_FEE` in `api/orders.ts` **and** `src/components/Cart.tsx` (must match).

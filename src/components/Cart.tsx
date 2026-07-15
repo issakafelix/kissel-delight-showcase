@@ -1,50 +1,89 @@
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { Bike, Minus, Plus, ShoppingBag, Store, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { db } from "@/lib/db";
+import { OrderType } from "@/lib/db";
+import { formatGHS } from "@/lib/menu-data";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import Receipt, { OrderReceiptData } from "@/components/Receipt";
+
+// Must match DELIVERY_FEE in api/orders.ts — the server value is authoritative.
+export const DELIVERY_FEE = 10;
+
+const PAYSTACK_PUBLIC_KEY =
+  import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ?? "pk_test_7912835ae75c1fccc7a9f6ccb7df343ead3daad7";
 
 const Cart = () => {
   const { cartItems, removeFromCart, updateQuantity, isCartOpen, setIsCartOpen, cartTotal, clearCart } = useCart();
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [orderType, setOrderType] = useState<OrderType>("pickup");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
+  const [notes, setNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [receiptData, setReceiptData] = useState<OrderReceiptData | null>(null);
 
+  const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
+  const grandTotal = cartTotal + deliveryFee;
+
   const onSuccess = async (reference: Record<string, unknown>) => {
-    setIsProcessing(false);
-    const ref = String(reference.reference || 'internal-test');
-    const snapshot = {
+    const ref = String(reference.reference || "");
+    const payload = {
+      reference: ref,
       customerEmail: email,
       customerPhone: phone,
       items: cartItems.map(item => ({ id: item.id, name: item.name, price: item.price, quantity: item.quantity })),
-      total: cartTotal,
-      paystackRef: ref,
+      orderType,
+      deliveryAddress: orderType === "delivery" ? deliveryAddress : "",
+      notes,
     };
 
     try {
-      await db.saveOrder(snapshot);
+      // The server verifies the payment with Paystack (using the secret key),
+      // recomputes the total from real menu prices, and saves the order.
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || `Order service responded with ${res.status}`);
+      }
 
       // Show receipt modal
       setReceiptData({
         type: "order",
         refNumber: ref,
+        trackingId: data.orderId,
         customerEmail: email,
         customerPhone: phone,
-        items: snapshot.items,
-        total: cartTotal,
+        items: payload.items,
+        subtotal: cartTotal,
+        deliveryFee,
+        total: grandTotal,
+        orderType,
+        deliveryAddress: payload.deliveryAddress,
+        notes,
         timestamp: new Date().toISOString(),
       });
 
       clearCart();
+      setNotes("");
       setIsCartOpen(false);
     } catch (e) {
-      toast.error("Payment succeeded, but failed to save order to our systems.");
+      console.error("Error saving order:", e);
+      toast.error(
+        `Your payment went through, but we couldn't register the order automatically. Please WhatsApp us on +233 54 991 0292 with your payment reference: ${ref}`,
+        { duration: 15000 }
+      );
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -59,6 +98,10 @@ const Cart = () => {
       toast.error("Contact details are required to process payments securely.");
       return;
     }
+    if (orderType === "delivery" && !deliveryAddress.trim()) {
+      toast.error("Please provide a delivery address or landmark.");
+      return;
+    }
 
     setIsProcessing(true);
 
@@ -67,13 +110,16 @@ const Cart = () => {
     script.src = 'https://js.paystack.co/v1/inline.js';
     script.async = true;
     script.onload = () => {
-      const handler = (window as any).PaystackPop.setup({
-        key: 'pk_test_7912835ae75c1fccc7a9f6ccb7df343ead3daad7', // Live Test Key
+      const paystack = (window as unknown as {
+        PaystackPop: { setup: (config: object) => { openIframe: () => void } };
+      }).PaystackPop;
+      const handler = paystack.setup({
+        key: PAYSTACK_PUBLIC_KEY,
         email: email,
-        amount: cartTotal * 100, // Pesewas
+        amount: Math.round(grandTotal * 100), // Pesewas
         currency: 'GHS',
         ref: '' + Math.floor((Math.random() * 1000000000) + 1),
-        callback: function (response: any) {
+        callback: function (response: Record<string, unknown>) {
           onSuccess(response);
         },
         onClose: function () {
@@ -81,6 +127,10 @@ const Cart = () => {
         }
       });
       handler.openIframe();
+    };
+    script.onerror = () => {
+      setIsProcessing(false);
+      toast.error("Could not reach the payment provider. Check your connection and retry.");
     };
     document.body.appendChild(script);
   };
@@ -114,7 +164,7 @@ const Cart = () => {
 
                   <div className="flex-1 min-w-0">
                     <h4 className="font-bold text-foreground truncate">{item.name}</h4>
-                    <p className="text-primary font-bold">GH₵{item.price.toFixed(2)}</p>
+                    <p className="text-primary font-bold">{formatGHS(item.price)}</p>
 
                     <div className="flex items-center gap-3 mt-2">
                       <div className="flex items-center border border-border rounded-md bg-background">
@@ -148,6 +198,34 @@ const Cart = () => {
 
         {cartItems.length > 0 && (
           <div className="p-6 border-t border-border bg-muted/10 space-y-4">
+            {/* Pickup / Delivery selector */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setOrderType("pickup")}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-semibold transition-colors",
+                  orderType === "pickup"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/40"
+                )}
+              >
+                <Store className="w-4 h-4" /> Pickup
+              </button>
+              <button
+                type="button"
+                onClick={() => setOrderType("delivery")}
+                className={cn(
+                  "flex items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-semibold transition-colors",
+                  orderType === "delivery"
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/40"
+                )}
+              >
+                <Bike className="w-4 h-4" /> Delivery (+{formatGHS(DELIVERY_FEE)})
+              </button>
+            </div>
+
             <div className="space-y-3 pb-4 border-b border-border/50">
               <div>
                 <Label htmlFor="email" className="text-xs font-semibold text-muted-foreground uppercase">Email Receipt</Label>
@@ -157,21 +235,37 @@ const Cart = () => {
                 <Label htmlFor="phone" className="text-xs font-semibold text-muted-foreground uppercase">Mobile Money / Whatsapp No.</Label>
                 <Input id="phone" type="tel" placeholder="054 123 4567" value={phone} onChange={(e) => setPhone(e.target.value)} className="mt-1 shadow-none" />
               </div>
+              {orderType === "delivery" && (
+                <div>
+                  <Label htmlFor="address" className="text-xs font-semibold text-muted-foreground uppercase">Delivery Address / Landmark</Label>
+                  <Input id="address" placeholder="e.g. Fetteh Kakraba, near KAAF University gate" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} className="mt-1 shadow-none" />
+                </div>
+              )}
+              <div>
+                <Label htmlFor="notes" className="text-xs font-semibold text-muted-foreground uppercase">Order Notes (Optional)</Label>
+                <Textarea id="notes" placeholder="Extra spicy, no onions…" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="mt-1 shadow-none resize-none" maxLength={300} />
+              </div>
             </div>
 
             <div>
-              <div className="flex items-center justify-between font-medium text-muted-foreground mb-2">
+              <div className="flex items-center justify-between font-medium text-muted-foreground mb-1">
                 <span>Subtotal</span>
-                <span>GH₵{cartTotal.toFixed(2)}</span>
+                <span>{formatGHS(cartTotal)}</span>
               </div>
+              {deliveryFee > 0 && (
+                <div className="flex items-center justify-between font-medium text-muted-foreground mb-1">
+                  <span>Delivery Fee</span>
+                  <span>{formatGHS(deliveryFee)}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between font-bold text-2xl text-foreground mb-4">
                 <span>Total</span>
-                <span className="text-primary">GH₵{cartTotal.toFixed(2)}</span>
+                <span className="text-primary">{formatGHS(grandTotal)}</span>
               </div>
             </div>
 
             <Button onClick={handleCheckout} disabled={isProcessing} size="lg" className="w-full py-6 text-lg rounded-xl shadow-warm flex items-center justify-center">
-              {isProcessing ? "Processing..." : `Pay GH₵${cartTotal.toFixed(2)} Securely`}
+              {isProcessing ? "Processing..." : `Pay ${formatGHS(grandTotal)} Securely`}
             </Button>
 
             <p className="text-center text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">

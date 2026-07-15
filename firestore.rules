@@ -1,0 +1,52 @@
+rules_version = '2';
+
+// Production rules for Kissel Kitchen.
+// Paste into: Firebase console → Firestore Database → Rules → Publish.
+//
+// Model:
+//  - Orders are written ONLY by the server (api/orders.ts uses the Admin SDK,
+//    which bypasses these rules) after verifying payment with Paystack.
+//  - Customers can read a single order by its unguessable ID (the /track page).
+//  - Staff (any signed-in Firebase Auth user) manage orders, reservations, menu.
+//  - Self-signup must stay DISABLED in Authentication → Settings → User actions,
+//    so "signed in" means "staff account you created".
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isStaff() {
+      return request.auth != null;
+    }
+
+    match /orders/{orderId} {
+      allow get: if true;                 // order tracking by direct ID
+      allow list: if isStaff();           // admin dashboard
+      allow update: if isStaff()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow create, delete: if false;     // server-only via Admin SDK
+    }
+
+    match /reservations/{reservationId} {
+      allow create: if
+        request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 100 &&
+        request.resource.data.phone is string && request.resource.data.phone.size() > 0 && request.resource.data.phone.size() <= 30 &&
+        request.resource.data.date is string && request.resource.data.date.size() <= 60 &&
+        request.resource.data.time is string && request.resource.data.time.size() <= 20 &&
+        request.resource.data.guests is string && request.resource.data.guests.size() <= 10 &&
+        request.resource.data.occasion is string && request.resource.data.occasion.size() <= 60 &&
+        request.resource.data.specialRequests is string && request.resource.data.specialRequests.size() <= 500 &&
+        request.resource.data.status == 'Confirmed';
+      allow get, list, update, delete: if isStaff();
+    }
+
+    match /menuItems/{itemId} {
+      allow read: if true;                // the public menu
+      allow create, update, delete: if isStaff();
+    }
+
+    // Everything else is closed.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
