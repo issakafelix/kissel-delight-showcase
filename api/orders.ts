@@ -15,11 +15,23 @@ interface IncomingItem {
   quantity: number;
 }
 
+// Accepts the service account either as raw JSON (FIREBASE_SERVICE_ACCOUNT)
+// or base64-encoded (FIREBASE_SERVICE_ACCOUNT_B64) — base64 survives
+// copy-paste into dashboards without corruption.
+const getServiceAccount = (): object => {
+  const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64;
+  const raw = b64
+    ? Buffer.from(b64.replace(/\s+/g, ""), "base64").toString("utf8")
+    : process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT / _B64 env var is not set");
+  // strip BOM, stray wrapping quotes, and whitespace that paste can add
+  const cleaned = raw.replace(/^﻿/, "").trim().replace(/^['"]+|['"]+$/g, "");
+  return JSON.parse(cleaned);
+};
+
 const getDb = (): Firestore => {
   if (!getApps().length) {
-    const raw = process.env.FIREBASE_SERVICE_ACCOUNT;
-    if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT env var is not set");
-    initializeApp({ credential: cert(JSON.parse(raw)) });
+    initializeApp({ credential: cert(getServiceAccount()) });
   }
   return getFirestore();
 };
@@ -79,7 +91,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     db = getDb();
   } catch (e) {
     console.error("firebase-admin init failed:", e);
-    return bad(res, 500, "Order service is not configured (FIREBASE_SERVICE_ACCOUNT missing/invalid)");
+    const reason = e instanceof Error ? e.message.slice(0, 120) : "unknown";
+    return bad(res, 500, `Order service is not configured (service account: ${reason})`);
   }
 
   // ── 1. Verify the payment with Paystack (server-to-server) ─────────────
