@@ -15,18 +15,33 @@ interface IncomingItem {
   quantity: number;
 }
 
-// Accepts the service account either as raw JSON (FIREBASE_SERVICE_ACCOUNT)
-// or base64-encoded (FIREBASE_SERVICE_ACCOUNT_B64) — base64 survives
-// copy-paste into dashboards without corruption.
+// Accepts the service account as base64 (FIREBASE_SERVICE_ACCOUNT_B64) or raw
+// JSON (FIREBASE_SERVICE_ACCOUNT). Tolerant of paste artifacts: BOM, wrapping
+// quotes, whitespace, a "KISSEL::" sacrificial prefix (absorbs a dropped first
+// character), and a dropped leading "{" / trailing "}" on raw JSON.
 const getServiceAccount = (): object => {
   const b64 = process.env.FIREBASE_SERVICE_ACCOUNT_B64;
-  const raw = b64
-    ? Buffer.from(b64.replace(/\s+/g, ""), "base64").toString("utf8")
-    : process.env.FIREBASE_SERVICE_ACCOUNT;
+  let raw: string | undefined;
+
+  if (b64) {
+    // Drop anything up to and including a "::" marker, then keep only
+    // base64 characters — a dropped first char lands in the discarded prefix.
+    const afterMarker = b64.includes("::") ? b64.slice(b64.lastIndexOf("::") + 2) : b64;
+    const clean = afterMarker.replace(/[^A-Za-z0-9+/=]/g, "");
+    raw = Buffer.from(clean, "base64").toString("utf8");
+  } else {
+    raw = process.env.FIREBASE_SERVICE_ACCOUNT;
+  }
   if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT / _B64 env var is not set");
-  // strip BOM, stray wrapping quotes, and whitespace that paste can add
-  const cleaned = raw.replace(/^﻿/, "").trim().replace(/^['"]+|['"]+$/g, "");
-  return JSON.parse(cleaned);
+
+  let s = raw.replace(/^﻿/, "").trim().replace(/^['"]+|['"]+$/g, "").trim();
+  if (!s.startsWith("{")) s = "{" + s;
+  if (!s.endsWith("}")) s = s + "}";
+
+  const parsed = JSON.parse(s);
+  if (!parsed.private_key || !parsed.client_email || !parsed.project_id)
+    throw new Error("service account JSON is missing required fields");
+  return parsed;
 };
 
 const getDb = (): Firestore => {
