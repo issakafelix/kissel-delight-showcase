@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { db, Order, OrderStatus } from "@/lib/db";
-import { formatGHS } from "@/lib/menu-data";
+import { formatPrice } from "@/lib/menu-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -139,20 +139,25 @@ const OrdersTab = ({ orders }: { orders: Order[] }) => {
                       <ul className="space-y-2">
                         {order.items.map((item, idx) => (
                           <li key={idx} className="flex justify-between text-sm">
-                            <span><span className="font-bold text-foreground">{item.quantity}x</span> {item.name}</span>
-                            <span className="text-muted-foreground">{formatGHS(item.price * item.quantity)}</span>
+                            <span>
+                              <span className="font-bold text-foreground">{item.quantity}x</span> {item.name}
+                              {item.addons && item.addons.length > 0 && (
+                                <span className="block text-xs text-muted-foreground">+ {item.addons.map((a) => a.name).join(", ")}</span>
+                              )}
+                            </span>
+                            <span className="text-muted-foreground">{formatPrice(item.price * item.quantity)}</span>
                           </li>
                         ))}
                       </ul>
                       {typeof order.deliveryFee === "number" && order.deliveryFee > 0 && (
                         <div className="flex justify-between text-sm text-muted-foreground mt-2">
                           <span>Delivery Fee</span>
-                          <span>{formatGHS(order.deliveryFee)}</span>
+                          <span>{formatPrice(order.deliveryFee)}</span>
                         </div>
                       )}
                       <div className="border-t mt-4 pt-4 flex justify-between font-bold text-lg">
                         <span>Total</span>
-                        <span className="text-primary">{formatGHS(order.total)}</span>
+                        <span className="text-primary">{formatPrice(order.total)}</span>
                       </div>
                     </div>
 

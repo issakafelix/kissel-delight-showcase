@@ -1,19 +1,32 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { toast } from "sonner";
 
-export interface CartItem {
+export interface CartAddon {
   id: string;
   name: string;
-  price: number;
-  quantity: number;
-  image: string;
+  price: number; // pesewas
 }
+
+export interface CartItem {
+  lineId: string; // itemId + variant + add-ons — distinguishes customised lines
+  itemId: string;
+  name: string; // includes variant, e.g. "Grilled Chicken (Full)"
+  image: string;
+  variantId?: string;
+  variantName?: string;
+  addons: CartAddon[];
+  unitPrice: number; // pesewas — variant/base price + add-ons
+  quantity: number;
+}
+
+// What the menu sends when adding to cart (before we assign a lineId).
+export type AddToCartPayload = Omit<CartItem, "lineId" | "quantity">;
 
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (item: Omit<CartItem, "quantity">) => void;
-  removeFromCart: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  addToCart: (item: AddToCartPayload, quantity?: number) => void;
+  removeFromCart: (lineId: string) => void;
+  updateQuantity: (lineId: string, quantity: number) => void;
   clearCart: () => void;
   isCartOpen: boolean;
   setIsCartOpen: (isOpen: boolean) => void;
@@ -23,7 +36,10 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = "kissel-cart";
+const CART_STORAGE_KEY = "kissel-cart-v2";
+
+export const makeLineId = (item: Pick<CartItem, "itemId" | "variantId" | "addons">) =>
+  [item.itemId, item.variantId ?? "", item.addons.map((a) => a.id).sort().join(",")].join("|");
 
 const loadStoredCart = (): CartItem[] => {
   try {
@@ -33,8 +49,14 @@ const loadStoredCart = (): CartItem[] => {
     if (!Array.isArray(parsed)) return [];
     return parsed.filter(
       (i): i is CartItem =>
-        i && typeof i.name === "string" && typeof i.price === "number" && typeof i.quantity === "number"
-    ).map((i) => ({ ...i, id: String(i.id) }));
+        i &&
+        typeof i.lineId === "string" &&
+        typeof i.itemId === "string" &&
+        typeof i.name === "string" &&
+        typeof i.unitPrice === "number" &&
+        typeof i.quantity === "number" &&
+        Array.isArray(i.addons)
+    );
   } catch {
     return [];
   }
@@ -52,39 +74,36 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [cartItems]);
 
-  const addToCart = (item: Omit<CartItem, "quantity">) => {
-    setCartItems((prevItems) => {
-      const existingItem = prevItems.find((i) => i.id === item.id);
-      if (existingItem) {
-        toast.success(`Added another ${item.name} to cart.`);
-        return prevItems.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+  const addToCart = (item: AddToCartPayload, quantity = 1) => {
+    const lineId = makeLineId(item);
+    setCartItems((prev) => {
+      const existing = prev.find((i) => i.lineId === lineId);
+      if (existing) {
+        toast.success(`Added ${quantity} more ${item.name} to cart.`);
+        return prev.map((i) =>
+          i.lineId === lineId ? { ...i, quantity: i.quantity + quantity } : i
         );
       }
       toast.success(`${item.name} added to cart.`);
-      return [...prevItems, { ...item, quantity: 1 }];
+      return [...prev, { ...item, lineId, quantity }];
     });
   };
 
-  const removeFromCart = (id: string) => {
-    setCartItems((prevItems) => prevItems.filter((i) => i.id !== id));
+  const removeFromCart = (lineId: string) => {
+    setCartItems((prev) => prev.filter((i) => i.lineId !== lineId));
   };
 
-  const updateQuantity = (id: string, quantity: number) => {
+  const updateQuantity = (lineId: string, quantity: number) => {
     if (quantity < 1) {
-      removeFromCart(id);
+      removeFromCart(lineId);
       return;
     }
-    setCartItems((prevItems) =>
-      prevItems.map((i) => (i.id === id ? { ...i, quantity } : i))
-    );
+    setCartItems((prev) => prev.map((i) => (i.lineId === lineId ? { ...i, quantity } : i)));
   };
 
-  const clearCart = () => {
-    setCartItems([]);
-  };
+  const clearCart = () => setCartItems([]);
 
-  const cartTotal = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+  const cartTotal = cartItems.reduce((total, item) => total + item.unitPrice * item.quantity, 0);
   const cartCount = cartItems.reduce((count, item) => count + item.quantity, 0);
 
   return (

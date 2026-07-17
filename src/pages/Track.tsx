@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { db, Order, ORDER_FLOW, OrderStatus } from "@/lib/db";
-import { formatGHS } from "@/lib/menu-data";
+import { formatPrice } from "@/lib/menu-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -193,20 +193,25 @@ const Track = () => {
                 <ul className="space-y-2 mb-4">
                   {order.items.map((item, idx) => (
                     <li key={idx} className="flex justify-between text-sm">
-                      <span><span className="font-bold">{item.quantity}x</span> {item.name}</span>
-                      <span className="text-muted-foreground">{formatGHS(item.price * item.quantity)}</span>
+                      <span>
+                        <span className="font-bold">{item.quantity}x</span> {item.name}
+                        {item.addons && item.addons.length > 0 && (
+                          <span className="block text-xs text-muted-foreground">+ {item.addons.map((a) => a.name).join(", ")}</span>
+                        )}
+                      </span>
+                      <span className="text-muted-foreground">{formatPrice(item.price * item.quantity)}</span>
                     </li>
                   ))}
                 </ul>
                 {typeof order.deliveryFee === "number" && order.deliveryFee > 0 && (
                   <div className="flex justify-between text-sm text-muted-foreground border-t pt-3">
                     <span>Delivery Fee</span>
-                    <span>{formatGHS(order.deliveryFee)}</span>
+                    <span>{formatPrice(order.deliveryFee)}</span>
                   </div>
                 )}
                 <div className="border-t mt-3 pt-3 flex justify-between font-bold text-lg">
                   <span>Total Paid</span>
-                  <span className="text-primary">{formatGHS(order.total)}</span>
+                  <span className="text-primary">{formatPrice(order.total)}</span>
                 </div>
               </CardContent>
             </Card>

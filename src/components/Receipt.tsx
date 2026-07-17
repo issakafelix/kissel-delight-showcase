@@ -3,10 +3,15 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { CheckCircle, Printer, X, UtensilsCrossed, CalendarCheck, MapPin, MessageCircle, Bike, Store } from "lucide-react";
-import { formatGHS } from "@/lib/menu-data";
+import { formatPrice } from "@/lib/menu-data";
 import type { OrderType } from "@/lib/db";
 
 const RESTAURANT_WHATSAPP = "233549910292";
+
+export interface ReceiptItemAddon {
+  name: string;
+  price: number;
+}
 
 // ─── Order Receipt ────────────────────────────────────────────────────────────
 export interface OrderReceiptData {
@@ -15,7 +20,7 @@ export interface OrderReceiptData {
   trackingId?: string;
   customerEmail: string;
   customerPhone: string;
-  items: { name: string; price: number; quantity: number }[];
+  items: { name: string; price: number; quantity: number; variantName?: string; addons?: ReceiptItemAddon[] }[];
   subtotal?: number;
   deliveryFee?: number;
   total: number;
@@ -49,7 +54,7 @@ interface ReceiptProps {
 const buildWhatsAppLink = (data: ReceiptData) => {
   let text: string;
   if (data.type === "order") {
-    const lines = data.items.map((i) => `• ${i.quantity}x ${i.name} — ${formatGHS(i.price * i.quantity)}`);
+    const lines = data.items.map((i) => `• ${i.quantity}x ${i.name} — ${formatPrice(i.price * i.quantity)}`);
     text = [
       `Hello Kissel Kitchen! 🍽️`,
       `I just placed an order (Ref: ${data.refNumber}).`,
@@ -57,7 +62,7 @@ const buildWhatsAppLink = (data: ReceiptData) => {
       ``,
       ...lines,
       ``,
-      `Total: ${formatGHS(data.total)}`,
+      `Total: ${formatPrice(data.total)}`,
       data.orderType === "delivery"
         ? `Type: Delivery — ${data.deliveryAddress || ""}`
         : `Type: Pickup`,
@@ -236,20 +241,27 @@ const OrderBody = ({ data }: { data: OrderReceiptData }) => (
         <tbody>
           {data.items.map((item, i) => (
             <tr key={i} className="border-t border-border/50">
-              <td className="p-3 font-medium">{item.name}</td>
+              <td className="p-3 font-medium">
+                {item.name}
+                {item.addons && item.addons.length > 0 && (
+                  <span className="block text-xs font-normal text-muted-foreground">
+                    + {item.addons.map((a) => a.name).join(", ")}
+                  </span>
+                )}
+              </td>
               <td className="p-3 text-center text-muted-foreground">×{item.quantity}</td>
-              <td className="p-3 text-right font-semibold">{formatGHS(item.price * item.quantity)}</td>
+              <td className="p-3 text-right font-semibold">{formatPrice(item.price * item.quantity)}</td>
             </tr>
           ))}
           {typeof data.deliveryFee === "number" && data.deliveryFee > 0 && (
             <tr className="border-t border-border/50">
               <td colSpan={2} className="p-3 text-muted-foreground">Delivery Fee</td>
-              <td className="p-3 text-right font-semibold">{formatGHS(data.deliveryFee)}</td>
+              <td className="p-3 text-right font-semibold">{formatPrice(data.deliveryFee)}</td>
             </tr>
           )}
           <tr className="border-t-2 border-golden/40 bg-primary/5">
             <td colSpan={2} className="p-3 font-bold text-base total-row text-primary">Total Paid</td>
-            <td className="p-3 text-right font-black text-lg text-primary">{formatGHS(data.total)}</td>
+            <td className="p-3 text-right font-black text-lg text-primary">{formatPrice(data.total)}</td>
           </tr>
         </tbody>
       </table>

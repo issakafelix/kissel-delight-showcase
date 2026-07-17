@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { format, startOfDay, subDays } from "date-fns";
 import { Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Order } from "@/lib/db";
-import { formatGHS } from "@/lib/menu-data";
+import { formatPrice } from "@/lib/menu-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useTheme } from "@/components/theme-provider";
 import { Banknote, ClipboardList, ShoppingBag, TrendingUp } from "lucide-react";
@@ -92,28 +92,28 @@ const AnalyticsTab = ({ orders }: { orders: Order[] }) => {
     <div className="space-y-6">
       {/* KPI tiles */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiTile label="Today's Revenue" value={formatGHS(stats.todayRevenue)} sub={`${stats.todaysCount} order${stats.todaysCount === 1 ? "" : "s"} today`} icon={Banknote} />
+        <KpiTile label="Today's Revenue" value={formatPrice(stats.todayRevenue)} sub={`${stats.todaysCount} order${stats.todaysCount === 1 ? "" : "s"} today`} icon={Banknote} />
         <KpiTile label="Active Orders" value={String(stats.pending)} sub="Pending · Preparing · Ready" icon={ClipboardList} />
-        <KpiTile label="All-Time Revenue" value={formatGHS(stats.totalRevenue)} sub={`${stats.totalCount} paid orders`} icon={TrendingUp} />
-        <KpiTile label="Avg Order Value" value={formatGHS(stats.avgOrder)} icon={ShoppingBag} />
+        <KpiTile label="All-Time Revenue" value={formatPrice(stats.totalRevenue)} sub={`${stats.totalCount} paid orders`} icon={TrendingUp} />
+        <KpiTile label="Avg Order Value" value={formatPrice(stats.avgOrder)} icon={ShoppingBag} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 7-day revenue */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Revenue — Last 7 Days (GH₵)</CardTitle>
+            <CardTitle className="text-base">Revenue — Last 7 Days (₵)</CardTitle>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={stats.revenueByDay} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} barCategoryGap="35%">
                 <CartesianGrid vertical={false} stroke={colors.grid} strokeWidth={1} />
                 <XAxis dataKey="day" tickLine={false} axisLine={{ stroke: colors.grid }} tick={{ fill: colors.axis, fontSize: 12 }} />
-                <YAxis tickLine={false} axisLine={false} tick={{ fill: colors.axis, fontSize: 12 }} width={44} />
+                <YAxis tickLine={false} axisLine={false} tick={{ fill: colors.axis, fontSize: 12 }} width={52} tickFormatter={(v: number) => `₵${Math.round(v / 100)}`} />
                 <Tooltip
                   cursor={{ fill: colors.grid, opacity: 0.4 }}
                   contentStyle={tooltipStyle}
-                  formatter={(value: number) => [formatGHS(value), "Revenue"]}
+                  formatter={(value: number) => [formatPrice(value), "Revenue"]}
                 />
                 <Bar dataKey="revenue" fill={colors.bar} radius={[4, 4, 0, 0]} maxBarSize={36} />
               </BarChart>
@@ -139,7 +139,7 @@ const AnalyticsTab = ({ orders }: { orders: Order[] }) => {
                     cursor={{ fill: colors.grid, opacity: 0.4 }}
                     contentStyle={tooltipStyle}
                     formatter={(value: number, _name, entry) => [
-                      `${value} sold · ${formatGHS((entry?.payload as { revenue?: number })?.revenue ?? 0)}`,
+                      `${value} sold · ${formatPrice((entry?.payload as { revenue?: number })?.revenue ?? 0)}`,
                       "Portions",
                     ]}
                   />

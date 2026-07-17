@@ -2,17 +2,32 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { initializeApp, cert, getApps } from "firebase-admin/app";
 import { getFirestore, Firestore } from "firebase-admin/firestore";
 
-// Must match DELIVERY_FEE in src/components/Cart.tsx — the server value is
-// authoritative; a mismatch causes the paid-amount check to reject the order.
-const DELIVERY_FEE = 10;
+// Pesewas. Must match DELIVERY_FEE in src/components/Cart.tsx — the server
+// value is authoritative; a mismatch makes the paid-amount check reject.
+const DELIVERY_FEE = 1000;
 const MAX_ITEMS = 30;
 const MAX_QTY = 50;
+const MAX_ADDONS = 10;
 
+// Client only sends identifiers + choices + quantity; the server resolves all
+// prices from the menu document so the browser can never dictate what is paid.
 interface IncomingItem {
+  itemId: string;
+  variantId?: string;
+  addonIds?: string[];
+  quantity: number;
+}
+
+interface MenuOption {
   id: string;
   name: string;
   price: number;
-  quantity: number;
+}
+interface MenuDoc {
+  name: string;
+  price: number;
+  variants?: MenuOption[];
+  addons?: MenuOption[];
 }
 
 // Accepts the service account as base64 (FIREBASE_SERVICE_ACCOUNT_B64) or raw
@@ -34,7 +49,7 @@ const getServiceAccount = (): object => {
   }
   if (!raw) throw new Error("FIREBASE_SERVICE_ACCOUNT / _B64 env var is not set");
 
-  let s = raw.replace(/^﻿/, "").trim().replace(/^['"]+|['"]+$/g, "").trim();
+  let s = raw.replace(/^\uFEFF/, "").trim().replace(/^['"]+|['"]+$/g, "").trim();
   if (!s.startsWith("{")) s = "{" + s;
   if (!s.endsWith("}")) s = s + "}";
 
@@ -93,12 +108,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return bad(res, 400, "Delivery orders require an address");
 
   for (const item of items) {
-    if (typeof item?.id !== "string" || typeof item?.name !== "string" || item.name.length > 200)
+    if (typeof item?.itemId !== "string" || item.itemId.length > 200)
       return bad(res, 400, "Invalid item in order");
+    if (item.variantId !== undefined && (typeof item.variantId !== "string" || item.variantId.length > 100))
+      return bad(res, 400, "Invalid item variant");
+    if (item.addonIds !== undefined && (!Array.isArray(item.addonIds) || item.addonIds.length > MAX_ADDONS))
+      return bad(res, 400, "Invalid item add-ons");
     if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > MAX_QTY)
       return bad(res, 400, "Invalid item quantity");
-    if (typeof item.price !== "number" || item.price < 0 || item.price > 100000)
-      return bad(res, 400, "Invalid item price");
   }
 
   let db: Firestore;
@@ -131,30 +148,62 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return bad(res, 502, "Could not reach Paystack to verify the payment. Your money is safe — contact us with your reference.");
   }
 
-  // ── 2. Recompute the total using server-side menu prices ────────────────
-  // Client-sent prices are only trusted if the menu collection is empty
-  // (pre-seed fallback); once the menu is in Firestore its prices win.
+  // ── 2. Recompute the total from the menu itself (all pesewas) ───────────
+  // The client only sends ids + choices + quantity; every price comes from
+  // the Firestore menu document, so the browser can't dictate what is paid.
   const menuSnap = await db.collection("menuItems").get();
-  const menuPrices = new Map<string, number>(
-    menuSnap.docs.map((d) => [d.id, (d.data().price as number) ?? 0])
+  if (menuSnap.empty)
+    return bad(res, 503, "The menu is not configured yet. Please try again shortly.");
+  const menu = new Map<string, MenuDoc>(
+    menuSnap.docs.map((d) => [d.id, d.data() as MenuDoc])
   );
 
+  interface CleanItem {
+    itemId: string;
+    name: string;
+    price: number; // unit price incl. variant + add-ons, pesewas
+    quantity: number;
+    variantName?: string;
+    addons: MenuOption[];
+  }
+
   let subtotal = 0;
-  const cleanItems: IncomingItem[] = [];
+  const cleanItems: CleanItem[] = [];
   for (const item of items) {
-    const serverPrice = menuPrices.get(item.id);
-    if (menuSnap.size > 0 && serverPrice === undefined && !item.id.startsWith("static-"))
-      return bad(res, 400, `Unknown menu item: ${item.id}`);
-    const price = serverPrice ?? item.price;
-    subtotal += price * item.quantity;
-    cleanItems.push({ id: item.id, name: item.name.slice(0, 200), price, quantity: item.quantity });
+    const doc = menu.get(item.itemId);
+    if (!doc) return bad(res, 400, `Unknown menu item: ${item.itemId}`);
+
+    // Resolve the base price: a variant sets it; otherwise the item's base.
+    let base = doc.price;
+    let variantName: string | undefined;
+    let name = doc.name;
+    if (doc.variants && doc.variants.length) {
+      const variant = doc.variants.find((v) => v.id === item.variantId);
+      if (!variant) return bad(res, 400, `Choose a size for ${doc.name}`);
+      base = variant.price;
+      variantName = variant.name;
+      name = `${doc.name} (${variant.name})`;
+    }
+
+    // Resolve add-ons, rejecting any the item doesn't offer.
+    const addons: MenuOption[] = [];
+    for (const addonId of item.addonIds ?? []) {
+      const addon = doc.addons?.find((a) => a.id === addonId);
+      if (!addon) return bad(res, 400, `Unknown add-on for ${doc.name}`);
+      addons.push({ id: addon.id, name: addon.name, price: addon.price });
+    }
+
+    const unit = base + addons.reduce((s, a) => s + a.price, 0);
+    if (!Number.isFinite(unit) || unit < 0) return bad(res, 400, "Invalid item price");
+    subtotal += unit * item.quantity;
+    cleanItems.push({ itemId: item.itemId, name, price: unit, quantity: item.quantity, variantName, addons });
   }
 
   const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
-  const total = Math.round((subtotal + deliveryFee) * 100) / 100;
+  const total = subtotal + deliveryFee; // integer pesewas
 
   // ── 3. The amount actually paid must match the order total ─────────────
-  if (Math.round(total * 100) !== paidPesewas)
+  if (total !== paidPesewas)
     return bad(res, 402, "Paid amount does not match the order total");
 
   // ── 4. Idempotency: one order per payment reference ────────────────────
@@ -167,7 +216,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     customerEmail: customerEmail.slice(0, 255),
     customerPhone: customerPhone.slice(0, 30),
     items: cleanItems,
-    subtotal: Math.round(subtotal * 100) / 100,
+    subtotal,
     deliveryFee,
     total,
     orderType,

@@ -16,11 +16,18 @@ import { MenuItem, DEFAULT_MENU } from "@/lib/menu-data";
 
 export { firestoreDb };
 
-export interface OrderItem {
-  id: string;
+export interface OrderItemAddon {
   name: string;
-  price: number;
+  price: number; // pesewas
+}
+
+export interface OrderItem {
+  itemId?: string;
+  name: string;
+  price: number; // pesewas — unit price incl. chosen variant + add-ons
   quantity: number;
+  variantName?: string;
+  addons?: OrderItemAddon[];
 }
 
 export type OrderStatus = "Pending" | "Preparing" | "Ready" | "Completed" | "Cancelled";
@@ -142,12 +149,13 @@ export const db = {
     await deleteDoc(doc(firestoreDb, "menuItems", id));
   },
 
-  // One-click migration of the static catalog into Firestore.
+  // Reset the menu to the built-in default catalog: clears every existing
+  // item, then writes DEFAULT_MENU. One batch (delete + set) is atomic.
   seedMenu: async () => {
+    const existing = await getDocs(menuCol());
     const batch = writeBatch(firestoreDb);
-    DEFAULT_MENU.forEach((item) => {
-      batch.set(doc(menuCol()), item);
-    });
+    existing.docs.forEach((d) => batch.delete(d.ref));
+    DEFAULT_MENU.forEach((item) => batch.set(doc(menuCol()), item));
     await batch.commit();
   },
 };
