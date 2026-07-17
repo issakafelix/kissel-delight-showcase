@@ -46,6 +46,11 @@ service cloud.firestore {
       allow create, update, delete: if isStaff();
     }
 
+    match /settings/{settingId} {
+      allow read: if true;                // cart checks open/paused state
+      allow write: if isStaff();
+    }
+
     // Everything else is closed.
     match /{document=**} {
       allow read, write: if false;

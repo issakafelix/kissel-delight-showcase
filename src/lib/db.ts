@@ -8,6 +8,7 @@ import {
   onSnapshot,
   query,
   orderBy,
+  setDoc,
   writeBatch,
   Unsubscribe,
 } from "firebase/firestore";
@@ -71,6 +72,21 @@ export interface Reservation {
 const ordersCol = () => collection(firestoreDb, "orders");
 const reservationsCol = () => collection(firestoreDb, "reservations");
 const menuCol = () => collection(firestoreDb, "menuItems");
+const settingsDoc = () => doc(firestoreDb, "settings", "store");
+
+// Store-wide switches the admin controls live. Hours are in Ghana time
+// (Africa/Accra = UTC); ordering is open when openHour <= hour < closeHour.
+export interface StoreSettings {
+  ordersPaused: boolean;
+  openHour: number; // 0-23
+  closeHour: number; // 1-24
+}
+
+export const DEFAULT_STORE_SETTINGS: StoreSettings = {
+  ordersPaused: false,
+  openHour: 9,
+  closeHour: 21,
+};
 
 // Database helper functions using Firebase Firestore.
 // Write helpers rethrow on failure so callers can surface real errors.
@@ -125,6 +141,26 @@ export const db = {
     return onSnapshot(q, (snapshot) => {
       onChange(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })) as Reservation[]);
     });
+  },
+
+  // --- STORE SETTINGS ---
+  subscribeStoreSettings: (onChange: (settings: StoreSettings) => void): Unsubscribe => {
+    return onSnapshot(
+      settingsDoc(),
+      (snapshot) => {
+        onChange(
+          snapshot.exists()
+            ? { ...DEFAULT_STORE_SETTINGS, ...(snapshot.data() as Partial<StoreSettings>) }
+            : DEFAULT_STORE_SETTINGS
+        );
+      },
+      // If the read fails (offline, rules), fail open so ordering still works.
+      () => onChange(DEFAULT_STORE_SETTINGS)
+    );
+  },
+
+  updateStoreSettings: async (changes: Partial<StoreSettings>) => {
+    await setDoc(settingsDoc(), changes, { merge: true });
   },
 
   // --- MENU ---

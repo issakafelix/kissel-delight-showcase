@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase";
-import { db, Order, Reservation } from "@/lib/db";
+import { db, DEFAULT_STORE_SETTINGS, Order, Reservation, StoreSettings } from "@/lib/db";
+import { formatPrice } from "@/lib/menu-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LogOut, LayoutDashboard, ShoppingBag, Calendar, LockKeyhole, BarChart3, UtensilsCrossed } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LogOut, LayoutDashboard, ShoppingBag, Calendar, LockKeyhole, BarChart3, UtensilsCrossed, Store } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -37,6 +40,13 @@ const playNewOrderChime = () => {
   }
 };
 
+const hourLabel = (h: number) => {
+  const norm = ((h % 24) + 24) % 24;
+  const ampm = norm < 12 ? "AM" : "PM";
+  const display = norm % 12 === 0 ? 12 : norm % 12;
+  return `${display}:00 ${ampm}`;
+};
+
 type TabKey = "orders" | "reservations" | "analytics" | "menu";
 
 const TABS: { key: TabKey; label: string; icon: typeof ShoppingBag }[] = [
@@ -55,6 +65,7 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("orders");
   const [orders, setOrders] = useState<Order[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
   const knownOrderIds = useRef<Set<string> | null>(null);
 
   useEffect(() => {
@@ -70,15 +81,28 @@ const Admin = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
 
+    // So the tab can alert even when it's in the background.
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
     const unsubOrders = db.subscribeOrders((liveOrders) => {
       // Alert on genuinely new orders (skip the initial snapshot)
       if (knownOrderIds.current !== null) {
         const fresh = liveOrders.filter((o) => !knownOrderIds.current!.has(o.id));
         if (fresh.length > 0) {
           playNewOrderChime();
-          fresh.forEach((o) =>
-            toast.success(`🛎️ New order from ${o.customerPhone || o.customerEmail} — GH₵${(o.total || 0).toFixed(2)}`)
-          );
+          fresh.forEach((o) => {
+            const summary = `New order from ${o.customerPhone || o.customerEmail} — ${formatPrice(o.total || 0)}`;
+            toast.success(`🛎️ ${summary}`);
+            if (document.hidden && "Notification" in window && Notification.permission === "granted") {
+              try {
+                new Notification("Kissel Kitchen", { body: summary });
+              } catch {
+                // some browsers restrict page-scope notifications — toast + chime still fired
+              }
+            }
+          });
         }
       }
       knownOrderIds.current = new Set(liveOrders.map((o) => o.id));
@@ -86,13 +110,29 @@ const Admin = () => {
     });
 
     const unsubRes = db.subscribeReservations(setReservations);
+    const unsubSettings = db.subscribeStoreSettings(setSettings);
 
     return () => {
       unsubOrders();
       unsubRes();
+      unsubSettings();
       knownOrderIds.current = null;
     };
   }, [isAuthenticated]);
+
+  const saveSettings = async (changes: Partial<StoreSettings>) => {
+    try {
+      await db.updateStoreSettings(changes);
+      if (changes.ordersPaused !== undefined) {
+        toast.success(changes.ordersPaused ? "Ordering paused — customers can't check out." : "Ordering resumed.");
+      } else {
+        toast.success("Opening hours updated.");
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error("Failed to save settings.");
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -207,6 +247,45 @@ const Admin = () => {
             </Button>
           ))}
         </div>
+
+        {/* Store status: pause ordering + opening hours (Ghana time) */}
+        <Card className={`mb-8 ${settings.ordersPaused ? "border-destructive/50 bg-destructive/5" : "border-golden/20"}`}>
+          <CardContent className="py-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <div className="flex items-center gap-3">
+              <Store className={`w-5 h-5 ${settings.ordersPaused ? "text-destructive" : "text-primary"}`} />
+              <label className="flex items-center gap-2 text-sm font-semibold cursor-pointer">
+                <Switch
+                  checked={!settings.ordersPaused}
+                  onCheckedChange={(open) => saveSettings({ ordersPaused: !open })}
+                />
+                {settings.ordersPaused ? "Ordering PAUSED" : "Accepting orders"}
+              </label>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground font-medium">Hours (Ghana time):</span>
+              <Select value={String(settings.openHour)} onValueChange={(v) => saveSettings({ openHour: parseInt(v, 10) })}>
+                <SelectTrigger className="h-8 w-[110px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 24 }, (_, h) => (
+                    <SelectItem key={h} value={String(h)}>{hourLabel(h)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-muted-foreground">to</span>
+              <Select value={String(settings.closeHour)} onValueChange={(v) => saveSettings({ closeHour: parseInt(v, 10) })}>
+                <SelectTrigger className="h-8 w-[110px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 24 }, (_, i) => i + 1).map((h) => (
+                    <SelectItem key={h} value={String(h)}>{hourLabel(h)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-xs text-muted-foreground basis-full sm:basis-auto sm:ml-auto">
+              Customers can't check out while paused or outside these hours.
+            </p>
+          </CardContent>
+        </Card>
 
         {activeTab === "orders" && <OrdersTab orders={orders} />}
         {activeTab === "reservations" && <ReservationsTab reservations={reservations} />}

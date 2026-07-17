@@ -1,10 +1,10 @@
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Bike, Minus, Plus, ShoppingBag, Store, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Bike, Clock, Minus, Plus, ShoppingBag, Store, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { OrderType } from "@/lib/db";
+import { db, DEFAULT_STORE_SETTINGS, OrderType, StoreSettings } from "@/lib/db";
 import { formatPrice } from "@/lib/menu-data";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,26 @@ import Receipt, { OrderReceiptData } from "@/components/Receipt";
 // Pesewas. Must match DELIVERY_FEE in api/orders.ts — server value is authoritative.
 export const DELIVERY_FEE = 1000;
 
-const PAYSTACK_PUBLIC_KEY =
-  import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ?? "pk_test_7912835ae75c1fccc7a9f6ccb7df343ead3daad7";
+// In production the key MUST come from the environment; silently falling back
+// to a test key would let "payments" through that move no real money.
+const PAYSTACK_PUBLIC_KEY: string =
+  import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ??
+  (import.meta.env.DEV ? "pk_test_7912835ae75c1fccc7a9f6ccb7df343ead3daad7" : "");
+const IS_TEST_MODE = PAYSTACK_PUBLIC_KEY.startsWith("pk_test_");
+
+const hourLabel = (h: number) => {
+  const norm = ((h % 24) + 24) % 24;
+  const ampm = norm < 12 ? "AM" : "PM";
+  const display = norm % 12 === 0 ? 12 : norm % 12;
+  return `${display}:00 ${ampm}`;
+};
+
+// Current hour in Ghana (Africa/Accra), regardless of the visitor's device TZ.
+const accraHour = () =>
+  parseInt(
+    new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Accra", hour: "2-digit", hour12: false }).format(new Date()),
+    10
+  ) % 24;
 
 const Cart = () => {
   const { cartItems, removeFromCart, updateQuantity, isCartOpen, setIsCartOpen, cartTotal, clearCart } = useCart();
@@ -27,9 +45,20 @@ const Cart = () => {
   const [notes, setNotes] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [receiptData, setReceiptData] = useState<OrderReceiptData | null>(null);
+  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
+
+  useEffect(() => db.subscribeStoreSettings(setSettings), []);
 
   const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
   const grandTotal = cartTotal + deliveryFee;
+
+  const hourNow = accraHour();
+  const withinHours = hourNow >= settings.openHour && hourNow < settings.closeHour;
+  const closedReason = settings.ordersPaused
+    ? "Ordering is temporarily paused — please check back soon or WhatsApp us on +233 54 991 0292."
+    : !withinHours
+      ? `We're closed right now. Ordering is open ${hourLabel(settings.openHour)} – ${hourLabel(settings.closeHour)} (Ghana time).`
+      : null;
 
   const onSuccess = async (reference: Record<string, unknown>) => {
     const ref = String(reference.reference || "");
@@ -108,6 +137,14 @@ const Cart = () => {
 
   const handleCheckout = () => {
     if (cartItems.length === 0) return;
+    if (closedReason) {
+      toast.error(closedReason);
+      return;
+    }
+    if (!PAYSTACK_PUBLIC_KEY) {
+      toast.error("Online payment is not configured yet. Please WhatsApp us on +233 54 991 0292 to order.");
+      return;
+    }
     // Items from the static fallback menu (shown when the Firestore menu is
     // empty or unreachable) don't exist server-side, so /api/orders would
     // reject the order AFTER Paystack has taken the money. Block before paying.
@@ -291,13 +328,30 @@ const Cart = () => {
                 </div>
               </div>
 
-              <Button onClick={handleCheckout} disabled={isProcessing} size="lg" className="w-full py-6 text-lg rounded-xl shadow-warm flex items-center justify-center">
-                {isProcessing ? "Processing..." : `Pay ${formatPrice(grandTotal)} Securely`}
+              {closedReason && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+                  <Clock className="w-4 h-4 mt-0.5 shrink-0" />
+                  <span>{closedReason}</span>
+                </div>
+              )}
+
+              <Button
+                onClick={handleCheckout}
+                disabled={isProcessing || !!closedReason}
+                size="lg"
+                className="w-full py-6 text-lg rounded-xl shadow-warm flex items-center justify-center"
+              >
+                {isProcessing ? "Processing..." : closedReason ? "Ordering Closed" : `Pay ${formatPrice(grandTotal)} Securely`}
               </Button>
 
               <p className="text-center text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
                 <span className="text-green-600">🔒</span> Secured by Paystack
               </p>
+              {IS_TEST_MODE && import.meta.env.PROD && (
+                <p className="text-center text-xs font-semibold text-amber-600">
+                  ⚠ Test mode — payments are not real
+                </p>
+              )}
             </div>
           )}
         </SheetContent>
