@@ -56,6 +56,18 @@ const OrdersTab = ({ orders }: { orders: Order[] }) => {
     }
   };
 
+  // Every order here was PAID before it was created, so cancelling means the
+  // customer's money must be sent back by hand in the Paystack dashboard.
+  const cancelOrder = (order: Order) => {
+    const ok = window.confirm(
+      `Cancel this PAID order (${formatPrice(order.total)})?\n\n` +
+        `The customer has already been charged. After cancelling, refund them in the ` +
+        `Paystack dashboard → Transactions → search ref ${order.paystackRef} → Refund.`
+    );
+    if (!ok) return;
+    setStatus(order.id, "Cancelled", `Order cancelled — remember to refund ${formatPrice(order.total)} via Paystack.`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Search + filters */}
@@ -161,6 +173,13 @@ const OrdersTab = ({ orders }: { orders: Order[] }) => {
                       </div>
                     </div>
 
+                    {order.status === "Cancelled" && (
+                      <p className="text-xs font-semibold text-destructive bg-destructive/10 border border-destructive/20 rounded-lg p-2">
+                        Cancelled after payment — refund {formatPrice(order.total)} in the Paystack
+                        dashboard (ref {order.paystackRef}) if not done yet.
+                      </p>
+                    )}
+
                     {action && (
                       <div className="space-y-2 pt-1">
                         <Button
@@ -172,7 +191,7 @@ const OrdersTab = ({ orders }: { orders: Order[] }) => {
                         {(order.status === "Pending" || order.status === "Preparing") && (
                           <Button
                             variant="outline"
-                            onClick={() => setStatus(order.id, "Cancelled", "Order cancelled.")}
+                            onClick={() => cancelOrder(order)}
                             className="w-full text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
                           >
                             <XCircle className="w-4 h-4 mr-2" /> Cancel Order

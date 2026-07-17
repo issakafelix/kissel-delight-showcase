@@ -19,4 +19,16 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split the heavyweights into their own long-cached chunks so the
+        // landing page JS is smaller and redeploys don't re-download vendors.
+        manualChunks: {
+          firebase: ["firebase/app", "firebase/auth", "firebase/firestore"],
+          react: ["react", "react-dom", "react-router-dom"],
+        },
+      },
+    },
+  },
 }));
