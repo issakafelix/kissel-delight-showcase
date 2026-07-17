@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { db } from "@/lib/db";
 import { Calendar as CalendarIcon, Users, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,8 +17,21 @@ import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import Receipt, { ReservationReceiptData } from "@/components/Receipt";
 
+// Bookable slots; hour24 lets us grey out times already past for today.
+const TIME_SLOTS = [
+  { label: "12:00 PM", hour24: 12 },
+  { label: "1:00 PM", hour24: 13 },
+  { label: "2:00 PM", hour24: 14 },
+  { label: "5:00 PM", hour24: 17 },
+  { label: "6:00 PM", hour24: 18 },
+  { label: "7:00 PM", hour24: 19 },
+  { label: "8:00 PM", hour24: 20 },
+  { label: "9:00 PM", hour24: 21 },
+];
+
 const Reservation = () => {
   const [date, setDate] = useState<Date>();
+  const [dateOpen, setDateOpen] = useState(false);
   const [guests, setGuests] = useState("");
   const [time, setTime] = useState("");
   const [name, setName] = useState("");
@@ -28,6 +41,7 @@ const Reservation = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Keys used to force-reset uncontrolled Select components
   const [formKey, setFormKey] = useState(0);
+  const [timeKey, setTimeKey] = useState(0); // resets only the time select
   const [receiptData, setReceiptData] = useState<ReservationReceiptData | null>(null);
 
   const handleReservation = async (e: React.FormEvent) => {
@@ -38,23 +52,27 @@ const Reservation = () => {
     }
 
     const formattedDate = format(date, "PPP");
+    // Stored with the booking so staff can look it up by the number on the receipt.
+    const refNumber = `RES-${Date.now().toString(36).toUpperCase()}`;
     setIsSubmitting(true);
-    
+
     try {
       await db.saveReservation({
+        refNumber,
         name,
         phone,
         date: formattedDate,
+        dateISO: format(date, "yyyy-MM-dd"),
         time,
         guests,
         occasion,
         specialRequests
       });
-      
+
       // Show receipt modal
       setReceiptData({
         type: "reservation",
-        refNumber: `RES-${Date.now().toString(36).toUpperCase()}`,
+        refNumber,
         name,
         phone,
         date: formattedDate,
@@ -134,7 +152,7 @@ const Reservation = () => {
                     
                     <div className="grid gap-2">
                       <label className="text-sm font-medium">Date</label>
-                      <Popover>
+                      <Popover open={dateOpen} onOpenChange={setDateOpen}>
                         <PopoverTrigger asChild>
                           <Button
                             variant={"outline"}
@@ -151,7 +169,19 @@ const Reservation = () => {
                           <Calendar
                             mode="single"
                             selected={date}
-                            onSelect={setDate}
+                            onSelect={(d) => {
+                              setDate(d);
+                              setDateOpen(false);
+                              // A time picked for a future day may already be
+                              // gone today — clear it so it can't be submitted.
+                              if (d && time) {
+                                const slot = TIME_SLOTS.find((s) => s.label === time);
+                                if (slot && isSameDay(d, new Date()) && slot.hour24 <= new Date().getHours()) {
+                                  setTime("");
+                                  setTimeKey((k) => k + 1);
+                                }
+                              }
+                            }}
                             initialFocus
                             disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
                           />
@@ -162,20 +192,21 @@ const Reservation = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="grid gap-2">
                         <label className="text-sm font-medium">Time</label>
-                        <Select onValueChange={setTime}>
+                        <Select key={timeKey} onValueChange={setTime}>
                           <SelectTrigger className="bg-background/50">
                             <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
                             <SelectValue placeholder="Select Time" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="12:00 PM">12:00 PM</SelectItem>
-                            <SelectItem value="1:00 PM">1:00 PM</SelectItem>
-                            <SelectItem value="2:00 PM">2:00 PM</SelectItem>
-                            <SelectItem value="5:00 PM">5:00 PM</SelectItem>
-                            <SelectItem value="6:00 PM">6:00 PM</SelectItem>
-                            <SelectItem value="7:00 PM">7:00 PM</SelectItem>
-                            <SelectItem value="8:00 PM">8:00 PM</SelectItem>
-                            <SelectItem value="9:00 PM">9:00 PM</SelectItem>
+                            {TIME_SLOTS.map((slot) => {
+                              const gone =
+                                !!date && isSameDay(date, new Date()) && slot.hour24 <= new Date().getHours();
+                              return (
+                                <SelectItem key={slot.label} value={slot.label} disabled={gone}>
+                                  {slot.label}{gone ? " — passed" : ""}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                       </div>

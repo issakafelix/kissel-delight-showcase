@@ -51,17 +51,21 @@ export interface Order {
   status: OrderStatus;
 }
 
+export type ReservationStatus = "Confirmed" | "Seated" | "Cancelled";
+
 export interface Reservation {
   id: string;
+  refNumber?: string; // customer-facing reference, printed on the receipt
   name: string;
   phone: string;
-  date: string;
+  date: string; // display string, e.g. "July 17th, 2026"
+  dateISO?: string; // yyyy-MM-dd — sortable; absent on older bookings
   time: string;
   guests: string;
   occasion: string;
   specialRequests: string;
   timestamp: string;
-  status: "Confirmed" | "Seated";
+  status: ReservationStatus;
 }
 
 const ordersCol = () => collection(firestoreDb, "orders");
@@ -112,7 +116,7 @@ export const db = {
     return docRef.id;
   },
 
-  updateReservationStatus: async (id: string, status: "Confirmed" | "Seated") => {
+  updateReservationStatus: async (id: string, status: ReservationStatus) => {
     await updateDoc(doc(firestoreDb, "reservations", id), { status });
   },
 

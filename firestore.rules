@@ -35,6 +35,8 @@ service cloud.firestore {
         request.resource.data.guests is string && request.resource.data.guests.size() <= 10 &&
         request.resource.data.occasion is string && request.resource.data.occasion.size() <= 60 &&
         request.resource.data.specialRequests is string && request.resource.data.specialRequests.size() <= 500 &&
+        request.resource.data.refNumber is string && request.resource.data.refNumber.size() <= 30 &&
+        request.resource.data.dateISO is string && request.resource.data.dateISO.size() <= 10 &&
         request.resource.data.status == 'Confirmed';
       allow get, list, update, delete: if isStaff();
     }
