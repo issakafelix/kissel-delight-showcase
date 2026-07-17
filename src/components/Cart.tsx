@@ -302,7 +302,7 @@ const Cart = () => {
                 {orderType === "delivery" && (
                   <div>
                     <Label htmlFor="address" className="text-xs font-semibold text-muted-foreground uppercase">Delivery Address / Landmark</Label>
-                    <Input id="address" placeholder="e.g. East Legon, near A&C Mall" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} className="mt-1 shadow-none" />
+                    <Input id="address" placeholder="e.g. Fetteh Kakraba, near KAAF University gate" value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)} className="mt-1 shadow-none" />
                   </div>
                 )}
                 <div>

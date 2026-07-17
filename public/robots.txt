@@ -12,3 +12,5 @@ Allow: /
 
 User-agent: *
 Allow: /
+
+Sitemap: https://kissel-delight-showcase.vercel.app/sitemap.xml

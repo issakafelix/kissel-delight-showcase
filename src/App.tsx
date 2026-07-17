@@ -13,6 +13,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 // stay out of the landing-page bundle.
 const Admin = lazy(() => import("./pages/Admin"));
 const Track = lazy(() => import("./pages/Track"));
+const Policies = lazy(() => import("./pages/Policies"));
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/track" element={<Track />} />
+            <Route path="/policies" element={<Policies />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

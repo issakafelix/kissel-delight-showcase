@@ -1,4 +1,5 @@
 import { Facebook, Instagram, Twitter, MapPin, Phone, Mail, Clock } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
@@ -82,8 +83,9 @@ const Footer = () => {
             © {new Date().getFullYear()} Kissel Food Restaurant. All rights reserved.
           </p>
           <div className="flex space-x-6 text-sm">
-            <a href="#" className="text-white/50 hover:text-white transition-colors">Privacy Policy</a>
-            <a href="#" className="text-white/50 hover:text-white transition-colors">Terms of Service</a>
+            <Link to="/policies#refunds" className="text-white/50 hover:text-white transition-colors">Refund Policy</Link>
+            <Link to="/policies#privacy" className="text-white/50 hover:text-white transition-colors">Privacy Policy</Link>
+            <Link to="/policies#terms" className="text-white/50 hover:text-white transition-colors">Terms of Service</Link>
           </div>
         </div>
       </div>
