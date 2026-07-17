@@ -299,7 +299,7 @@ const MenuTab = () => {
           <Card key={item.id} className={!item.available ? "opacity-70" : undefined}>
             <div className="h-36 overflow-hidden rounded-t-lg relative">
               <img src={item.image} alt={item.name} className="w-full h-full object-cover" loading="lazy"
-                onError={(e) => { e.currentTarget.src = "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&q=80"; }} />
+                onError={(e) => { e.currentTarget.src = "/menu/jollof-rice.jpg"; }} />
               {!item.available && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                   <Badge variant="destructive">Sold Out</Badge>
