@@ -94,18 +94,30 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   };
 
   // ── Basic input validation ──────────────────────────────────────────────
-  if (!reference || typeof reference !== "string" || reference.length > 100)
+  // Paystack references use alnum plus -.= ; requiring that charset (and a
+  // sane minimum length) also makes the value safe to use as a Firestore
+  // document ID below, with no separate sanitization step needed.
+  if (
+    !reference ||
+    typeof reference !== "string" ||
+    reference.length < 8 ||
+    reference.length > 100 ||
+    !/^[A-Za-z0-9\-.=]+$/.test(reference)
+  )
     return bad(res, 400, "Missing or invalid payment reference");
   if (!Array.isArray(items) || items.length === 0 || items.length > MAX_ITEMS)
     return bad(res, 400, "Missing or invalid order items");
-  if (!customerEmail || typeof customerEmail !== "string" || customerEmail.length > 255)
-    return bad(res, 400, "Missing customer email");
-  if (!customerPhone || typeof customerPhone !== "string" || customerPhone.length > 30)
-    return bad(res, 400, "Missing customer phone");
+  const email = typeof customerEmail === "string" ? customerEmail.trim() : "";
+  if (!email || email.length > 255 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return bad(res, 400, "Missing or invalid customer email");
+  const phone = typeof customerPhone === "string" ? customerPhone.trim() : "";
+  if (!phone || phone.length > 30 || phone.replace(/\D/g, "").length < 9 || !/^[\d\s+()-]+$/.test(phone))
+    return bad(res, 400, "Missing or invalid customer phone");
   if (orderType !== "pickup" && orderType !== "delivery")
     return bad(res, 400, "Invalid order type");
-  if (orderType === "delivery" && (!deliveryAddress || typeof deliveryAddress !== "string"))
-    return bad(res, 400, "Delivery orders require an address");
+  const address = typeof deliveryAddress === "string" ? deliveryAddress.trim() : "";
+  if (orderType === "delivery" && address.length < 5)
+    return bad(res, 400, "Delivery orders require a valid address");
 
   for (const item of items) {
     if (typeof item?.itemId !== "string" || item.itemId.length > 200)
@@ -122,9 +134,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     db = getDb();
   } catch (e) {
+    // Full detail stays server-side only — echoing config/parse errors back
+    // to an anonymous caller would leak internals about the deployment.
     console.error("firebase-admin init failed:", e);
-    const reason = e instanceof Error ? e.message.slice(0, 120) : "unknown";
-    return bad(res, 500, `Order service is not configured (service account: ${reason})`);
+    return bad(res, 500, "Order service is temporarily unavailable. Please contact us with your payment reference.");
   }
 
   // ── 1. Verify the payment with Paystack (server-to-server) ─────────────
@@ -142,6 +155,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return bad(res, 402, "Payment could not be verified with Paystack");
     if (ps.data.currency !== "GHS")
       return bad(res, 402, "Unexpected payment currency");
+    if (typeof ps.data.amount !== "number" || !Number.isFinite(ps.data.amount))
+      return bad(res, 502, "Paystack returned an unexpected response. Your money is safe — contact us with your reference.");
     paidPesewas = ps.data.amount;
   } catch (e) {
     console.error("Paystack verify failed:", e);
@@ -206,26 +221,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (total !== paidPesewas)
     return bad(res, 402, "Paid amount does not match the order total");
 
-  // ── 4. Idempotency: one order per payment reference ────────────────────
-  const existing = await db.collection("orders").where("paystackRef", "==", reference).limit(1).get();
-  if (!existing.empty)
-    return res.status(200).json({ orderId: existing.docs[0].id, duplicate: true });
+  // ── 4 & 5. Save atomically, keyed on the payment reference ──────────────
+  // Using the reference itself as the document ID makes "one order per
+  // payment" an atomic guarantee at the database level: .create() rejects
+  // outright if the doc already exists, so two requests racing on the same
+  // reference (a retried client call, a flaky network) can never both
+  // succeed — the loser gets a clean "duplicate" response, never a second
+  // order for a payment that's already been recorded.
+  const docRef = db.collection("orders").doc(reference);
+  try {
+    await docRef.create({
+      customerEmail: email.slice(0, 255),
+      customerPhone: phone.slice(0, 30),
+      items: cleanItems,
+      subtotal,
+      deliveryFee,
+      total,
+      orderType,
+      deliveryAddress: orderType === "delivery" ? address.slice(0, 300) : "",
+      notes: typeof notes === "string" ? notes.slice(0, 300) : "",
+      paystackRef: reference,
+      status: "Pending",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (e) {
+    const code = (e as { code?: number })?.code;
+    const alreadyExists = code === 6 || /already exists/i.test(e instanceof Error ? e.message : "");
+    if (alreadyExists) return res.status(200).json({ orderId: reference, duplicate: true });
+    console.error("Failed to save verified order:", e);
+    return bad(res, 500, "Payment was verified but we couldn't save your order. Your money is safe — contact us with your reference so we can create it manually.");
+  }
 
-  // ── 5. Save the verified order ──────────────────────────────────────────
-  const docRef = await db.collection("orders").add({
-    customerEmail: customerEmail.slice(0, 255),
-    customerPhone: customerPhone.slice(0, 30),
-    items: cleanItems,
-    subtotal,
-    deliveryFee,
-    total,
-    orderType,
-    deliveryAddress: orderType === "delivery" ? String(deliveryAddress).slice(0, 300) : "",
-    notes: typeof notes === "string" ? notes.slice(0, 300) : "",
-    paystackRef: reference,
-    status: "Pending",
-    timestamp: new Date().toISOString(),
-  });
-
-  return res.status(201).json({ orderId: docRef.id });
+  return res.status(201).json({ orderId: reference });
 }

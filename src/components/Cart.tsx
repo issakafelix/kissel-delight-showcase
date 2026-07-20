@@ -22,6 +22,17 @@ const PAYSTACK_PUBLIC_KEY: string =
   (import.meta.env.DEV ? "pk_test_7912835ae75c1fccc7a9f6ccb7df343ead3daad7" : "");
 const IS_TEST_MODE = PAYSTACK_PUBLIC_KEY.startsWith("pk_test_");
 
+// A weak/guessable reference matters here: the server treats "a payment
+// verified as successful for this exact reference" as proof the order is
+// legitimate, so the reference itself needs to be unguessable, not just
+// unique. crypto.randomUUID() gives 122 bits of entropy vs. ~30 from
+// Math.random() — the old scheme could theoretically collide or be brute
+// forced within the short window before this order is saved.
+const genReference = (): string => {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) return crypto.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+};
+
 // Current hour in Ghana (Africa/Accra), regardless of the visitor's device TZ.
 const accraHour = () =>
   parseInt(
@@ -147,12 +158,18 @@ const Cart = () => {
       );
       return;
     }
-    if (!email.trim() || !phone.trim()) {
-      toast.error("Contact details are required to process payments securely.");
+    // Mirrors the server's validation (api/orders.ts) so a customer finds out
+    // about a typo now, not after paying and having the order rejected.
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      toast.error("Please enter a valid email address.");
       return;
     }
-    if (orderType === "delivery" && !deliveryAddress.trim()) {
-      toast.error("Please provide a delivery address or landmark.");
+    if (phone.trim().replace(/\D/g, "").length < 9) {
+      toast.error("Please enter a valid phone number.");
+      return;
+    }
+    if (orderType === "delivery" && deliveryAddress.trim().length < 5) {
+      toast.error("Please provide a fuller delivery address or landmark.");
       return;
     }
 
@@ -170,7 +187,7 @@ const Cart = () => {
         email: email,
         amount: grandTotal, // already in pesewas
         currency: "GHS",
-        ref: "" + Math.floor(Math.random() * 1000000000 + 1),
+        ref: genReference(),
         callback: function (response: Record<string, unknown>) {
           onSuccess(response);
         },
