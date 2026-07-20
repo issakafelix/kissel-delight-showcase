@@ -4,7 +4,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Bike, Clock, Minus, Plus, ShoppingBag, Store, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { db, DEFAULT_STORE_SETTINGS, OrderType, StoreSettings } from "@/lib/db";
+import { db, DEFAULT_STORE_SETTINGS, hourLabel, OrderType, StoreSettings } from "@/lib/db";
 import { formatPrice } from "@/lib/menu-data";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -21,13 +21,6 @@ const PAYSTACK_PUBLIC_KEY: string =
   import.meta.env.VITE_PAYSTACK_PUBLIC_KEY ??
   (import.meta.env.DEV ? "pk_test_7912835ae75c1fccc7a9f6ccb7df343ead3daad7" : "");
 const IS_TEST_MODE = PAYSTACK_PUBLIC_KEY.startsWith("pk_test_");
-
-const hourLabel = (h: number) => {
-  const norm = ((h % 24) + 24) % 24;
-  const ampm = norm < 12 ? "AM" : "PM";
-  const display = norm % 12 === 0 ? 12 : norm % 12;
-  return `${display}:00 ${ampm}`;
-};
 
 // Current hour in Ghana (Africa/Accra), regardless of the visitor's device TZ.
 const accraHour = () =>

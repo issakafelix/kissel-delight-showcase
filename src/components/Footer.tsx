@@ -1,7 +1,12 @@
+import { useEffect, useState } from "react";
 import { Facebook, Instagram, Twitter, MapPin, Phone, Mail, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
+import { db, DEFAULT_STORE_SETTINGS, hourLabel, StoreSettings } from "@/lib/db";
 
 const Footer = () => {
+  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
+  useEffect(() => db.subscribeStoreSettings(setSettings), []);
+
   return (
     <footer className="bg-earth-brown text-white/90 pt-20 pb-10">
       <div className="container mx-auto px-4">
@@ -58,22 +63,17 @@ const Footer = () => {
             </ul>
           </div>
           
-          {/* Operating Hours */}
+          {/* Operating Hours — live from the admin panel, same hours enforced at checkout */}
           <div>
             <h4 className="text-lg font-bold text-white mb-6 uppercase tracking-wider">Hours</h4>
             <ul className="space-y-4">
               <li className="flex items-start justify-between border-b border-white/10 pb-2">
-                <span className="flex items-center"><Clock className="w-4 h-4 text-golden mr-2"/>Mon - Thu</span>
-                <span className="text-white/70">11:00 AM - 10:00 PM</span>
+                <span className="flex items-center"><Clock className="w-4 h-4 text-golden mr-2"/>Every day</span>
+                <span className="text-white/70">{hourLabel(settings.openHour)} - {hourLabel(settings.closeHour)}</span>
               </li>
-              <li className="flex items-start justify-between border-b border-white/10 pb-2">
-                <span className="flex items-center"><Clock className="w-4 h-4 text-golden mr-2"/>Fri - Sat</span>
-                <span className="text-white/70">11:00 AM - 11:00 PM</span>
-              </li>
-              <li className="flex items-start justify-between border-b border-white/10 pb-2">
-                <span className="flex items-center"><Clock className="w-4 h-4 text-golden mr-2"/>Sunday</span>
-                <span className="text-white/70">12:00 PM - 9:00 PM</span>
-              </li>
+              {settings.ordersPaused && (
+                <li className="text-amber-400 text-sm">Online ordering is temporarily paused.</li>
+              )}
             </ul>
           </div>
         </div>

@@ -20,19 +20,19 @@ const Hero = () => {
           <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 mb-8 animate-slide-up">
             <Star className="text-golden w-4 h-4 fill-current" />
             <span className="text-white text-sm font-medium tracking-wide border-l border-white/20 pl-2 ml-2">
-              Award Winning Dining Experience
+              Fresh, Made to Order in Kasoa
             </span>
           </div>
 
           <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-6 animate-slide-up" style={{ animationDelay: '100ms' }}>
-            Taste The <br/>
+            Real Jollof, <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-golden to-warm-orange">
-              Extraordinary
+              Real Fast
             </span>
           </h1>
-          
+
           <p className="text-xl md:text-2xl text-gray-200 mb-10 max-w-2xl leading-relaxed animate-slide-up" style={{ animationDelay: '200ms' }}>
-            Where every dish is a masterpiece. Embark on a culinary journey exploring the depths of flavor and tradition with a modern twist.
+            Smoky jollof, grilled chicken and stone-baked pizza, cooked fresh and ready for pickup or delivery around Fetteh Kakraba. Pay easily with Mobile Money or card.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 animate-scale-in" style={{ animationDelay: '300ms' }}>

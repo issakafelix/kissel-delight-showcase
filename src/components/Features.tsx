@@ -1,11 +1,11 @@
-import { ChefHat, Leaf, Clock, UtensilsCrossed } from "lucide-react";
+import { CookingPot, Leaf, Bike, Smartphone } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 const features = [
   {
-    icon: <ChefHat className="w-10 h-10 text-golden mb-4" />,
-    title: "Master Chefs",
-    description: "Our dishes are crafted by experienced chefs passionate about authentic and modern gastronomy."
+    icon: <CookingPot className="w-10 h-10 text-golden mb-4" />,
+    title: "Cooked Fresh to Order",
+    description: "Nothing sits under a heat lamp — every plate is cooked after you order it, the way home food should be."
   },
   {
     icon: <Leaf className="w-10 h-10 text-golden mb-4" />,
@@ -13,14 +13,14 @@ const features = [
     description: "We source our ingredients locally to ensure every meal is fresh, vibrant, and incredibly tasty."
   },
   {
-    icon: <Clock className="w-10 h-10 text-golden mb-4" />,
-    title: "Fast Service",
-    description: "Enjoy your meals without the long wait, perfectly timed so you can savor every moment."
+    icon: <Bike className="w-10 h-10 text-golden mb-4" />,
+    title: "Pickup or Delivery",
+    description: "Grab it yourself or have it delivered around Fetteh Kakraba and nearby Kasoa — your choice at checkout."
   },
   {
-    icon: <UtensilsCrossed className="w-10 h-10 text-golden mb-4" />,
-    title: "Elegant Ambiance",
-    description: "A meticulously designed dining environment to give you a premium eating experience."
+    icon: <Smartphone className="w-10 h-10 text-golden mb-4" />,
+    title: "Pay with MoMo or Card",
+    description: "Secure checkout with Mobile Money or bank card — no cash needed, and you can track your order live."
   }
 ];
 
@@ -32,7 +32,7 @@ const Features = () => {
           <span className="text-primary font-bold tracking-widest uppercase text-sm mb-2 block">Why Choose Us</span>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">The Kissel Standard</h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Experience culinary excellence where tradition meets modern innovation.
+            Authentic Ghanaian cooking, made simple to order online.
           </p>
         </div>
 

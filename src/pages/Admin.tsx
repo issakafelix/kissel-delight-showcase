@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from "firebase/auth";
 import { firebaseAuth } from "@/lib/firebase";
-import { db, DEFAULT_STORE_SETTINGS, Order, Reservation, StoreSettings } from "@/lib/db";
+import { db, DEFAULT_STORE_SETTINGS, hourLabel, Order, Reservation, StoreSettings } from "@/lib/db";
 import { formatPrice } from "@/lib/menu-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -38,13 +38,6 @@ const playNewOrderChime = () => {
   } catch {
     // audio blocked — the toast still notifies
   }
-};
-
-const hourLabel = (h: number) => {
-  const norm = ((h % 24) + 24) % 24;
-  const ampm = norm < 12 ? "AM" : "PM";
-  const display = norm % 12 === 0 ? 12 : norm % 12;
-  return `${display}:00 ${ampm}`;
 };
 
 type TabKey = "orders" | "reservations" | "analytics" | "menu";

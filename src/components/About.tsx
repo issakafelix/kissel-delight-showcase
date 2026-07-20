@@ -16,42 +16,47 @@ const About = () => {
             <div>
               <h3 className="text-3xl font-bold text-primary mb-6">Our Story</h3>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                Kissel Food was born from a passion for bringing authentic flavors and exceptional dining experiences to our community. We believe that great food brings people together, creating memorable moments that last a lifetime.
+                Kissel Food is a Ghanaian kitchen based in Kasoa–Fetteh Kakraba, cooking the food we grew up on —
+                smoky jollof, grilled and fried chicken, fresh fried rice — alongside pizza for when you want
+                something different. We believe good food brings people together.
               </p>
               <p className="text-muted-foreground mb-6 leading-relaxed">
-                Our kitchen combines traditional cooking methods with modern techniques to create dishes that honor their origins while satisfying contemporary tastes. Every meal is prepared with love, care, and the finest ingredients.
+                Everything is prepared fresh after you order, never sitting around waiting. We built this site so
+                you can order online with Mobile Money or card, track your food from the kitchen to your door,
+                and book a table when you'd rather eat in.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                From our signature Jollof rice that captures the essence of Ghanaian cuisine to our artisan pizzas that celebrate international flavors, we are committed to delivering excellence in every bite.
+                From our signature Jollof rice that captures the essence of Ghanaian cuisine to our stone-baked
+                pizzas loaded with real toppings, every dish is made with care and honest ingredients.
               </p>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <Card className="bg-gradient-card shadow-elegant">
                 <CardContent className="p-6 text-center">
-                  <div className="text-3xl font-bold text-primary mb-2">5+</div>
-                  <div className="text-muted-foreground">Years of Excellence</div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gradient-card shadow-elegant">
-                <CardContent className="p-6 text-center">
-                  <div className="text-3xl font-bold text-primary mb-2">1000+</div>
-                  <div className="text-muted-foreground">Happy Customers</div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gradient-card shadow-elegant">
-                <CardContent className="p-6 text-center">
-                  <div className="text-3xl font-bold text-primary mb-2">15+</div>
-                  <div className="text-muted-foreground">Signature Dishes</div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gradient-card shadow-elegant">
-                <CardContent className="p-6 text-center">
                   <div className="text-3xl font-bold text-primary mb-2">100%</div>
-                  <div className="text-muted-foreground">Fresh Ingredients</div>
+                  <div className="text-muted-foreground">Cooked Fresh to Order</div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-card shadow-elegant">
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl font-bold text-primary mb-2">4</div>
+                  <div className="text-muted-foreground">Menu Categories</div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-card shadow-elegant">
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl font-bold text-primary mb-2">MoMo</div>
+                  <div className="text-muted-foreground">&amp; Card Payments</div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-card shadow-elegant">
+                <CardContent className="p-6 text-center">
+                  <div className="text-3xl font-bold text-primary mb-2">Live</div>
+                  <div className="text-muted-foreground">Order Tracking</div>
                 </CardContent>
               </Card>
             </div>

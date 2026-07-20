@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { db, DEFAULT_STORE_SETTINGS, hourLabel, StoreSettings } from "@/lib/db";
 
 // 🔑 Replace this with your Formspree Form ID after signing up at https://formspree.io
 const FORMSPREE_ID = "xqegjyqb";
@@ -11,6 +12,8 @@ const FORMSPREE_ID = "xqegjyqb";
 const Contact = () => {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [settings, setSettings] = useState<StoreSettings>(DEFAULT_STORE_SETTINGS);
+  useEffect(() => db.subscribeStoreSettings(setSettings), []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +51,7 @@ const Contact = () => {
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold text-earth-brown mb-4">Visit Us Today</h2>
           <p className="text-xl text-muted-foreground">
-            We are ready to serve you the finest dining experience
+            Come eat in, or order ahead for pickup and delivery
           </p>
         </div>
 
@@ -108,9 +111,10 @@ const Contact = () => {
             </CardHeader>
             <CardContent>
               <div className="text-muted-foreground">
-                <p className="mb-2"><strong>Monday - Thursday:</strong><br />11:00 AM - 10:00 PM</p>
-                <p className="mb-2"><strong>Friday - Saturday:</strong><br />11:00 AM - 11:00 PM</p>
-                <p><strong>Sunday:</strong><br />12:00 PM - 9:00 PM</p>
+                <p><strong>Every day:</strong><br />{hourLabel(settings.openHour)} - {hourLabel(settings.closeHour)}</p>
+                {settings.ordersPaused && (
+                  <p className="mt-2 text-amber-600 text-sm font-medium">Online ordering is temporarily paused.</p>
+                )}
               </div>
             </CardContent>
           </Card>

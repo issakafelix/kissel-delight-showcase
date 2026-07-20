@@ -88,6 +88,15 @@ export const DEFAULT_STORE_SETTINGS: StoreSettings = {
   closeHour: 21,
 };
 
+// "21" -> "9:00 PM". Shared by the cart guard, admin hours picker, and
+// anywhere on the site that displays opening hours.
+export const hourLabel = (h: number) => {
+  const norm = ((h % 24) + 24) % 24;
+  const ampm = norm < 12 ? "AM" : "PM";
+  const display = norm % 12 === 0 ? 12 : norm % 12;
+  return `${display}:00 ${ampm}`;
+};
+
 // Database helper functions using Firebase Firestore.
 // Write helpers rethrow on failure so callers can surface real errors.
 export const db = {
